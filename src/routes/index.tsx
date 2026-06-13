@@ -32,7 +32,7 @@ function PlanoComplexo() {
   const [iterations, setIterations] = useState(50);
   const [view, setView] = useState({ cx: -0.5, cy: 0, scale: 4 / 600 });
   const [animating, setAnimating] = useState(false);
-  const rafRef = useRef<number>();
+  const rafRef = useRef<number | null>(null);
 
   function applyPreset(id: string) {
     const found = PRESETS.find((x) => x.id === id);
