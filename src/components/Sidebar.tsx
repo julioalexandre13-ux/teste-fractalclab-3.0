@@ -1,7 +1,8 @@
+import { useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Compass, Triangle } from "lucide-react";
+import { Compass, Triangle, Menu, X } from "lucide-react";
 
-export function Sidebar() {
+function SidebarContent({ onClose }: { onClose?: () => void }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   const items = [
@@ -22,9 +23,9 @@ export function Sidebar() {
   ];
 
   return (
-    <aside className="hidden md:flex w-[280px] shrink-0 flex-col justify-between border-r border-border bg-card px-5 py-6">
+    <div className="flex h-full flex-col justify-between px-5 py-6">
       <div>
-        <Link to="/" className="flex items-center gap-3 px-2 pb-8">
+        <Link to="/" className="flex items-center gap-3 px-2 pb-8" onClick={onClose}>
           <svg viewBox="0 0 40 40" className="h-9 w-9 text-primary" fill="currentColor" aria-hidden>
             <polygon points="20,4 36,32 4,32" opacity="0.18" />
             <polygon points="20,12 30,30 10,30" opacity="0.35" />
@@ -46,6 +47,7 @@ export function Sidebar() {
               <Link
                 key={it.to}
                 to={it.to}
+                onClick={onClose}
                 className={`flex items-start gap-3 rounded-xl px-3 py-3 transition-colors ${
                   it.active
                     ? "bg-accent border border-primary/20 text-primary"
@@ -74,6 +76,50 @@ export function Sidebar() {
           Projeto educacional para explorar a beleza da matemática através dos fractais.
         </p>
       </div>
-    </aside>
+    </div>
+  );
+}
+
+export function Sidebar() {
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  return (
+    <>
+      {/* Desktop sidebar */}
+      <aside className="hidden md:flex w-[280px] shrink-0 flex-col border-r border-border bg-card">
+        <SidebarContent />
+      </aside>
+
+      {/* Mobile hamburger button */}
+      <button
+        className="md:hidden fixed top-4 left-4 z-40 flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card shadow-md text-foreground"
+        onClick={() => setMobileOpen(true)}
+        aria-label="Abrir menu"
+      >
+        <Menu className="h-5 w-5" />
+      </button>
+
+      {/* Mobile overlay + drawer */}
+      {mobileOpen && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="md:hidden fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+            onClick={() => setMobileOpen(false)}
+          />
+          {/* Drawer */}
+          <aside className="md:hidden fixed left-0 top-0 bottom-0 z-50 w-[280px] bg-card border-r border-border shadow-2xl flex flex-col animate-in slide-in-from-left duration-200">
+            <button
+              className="absolute top-4 right-4 flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary"
+              onClick={() => setMobileOpen(false)}
+              aria-label="Fechar menu"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <SidebarContent onClose={() => setMobileOpen(false)} />
+          </aside>
+        </>
+      )}
+    </>
   );
 }
