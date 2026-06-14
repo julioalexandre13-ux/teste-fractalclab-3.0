@@ -222,15 +222,23 @@ function SierpinskiCanvas({ iterations, color }: { iterations: number; color: st
 
 function ResponsiveFractal({ type, iterations, color }: { type: Tab; iterations: number; color: string }) {
   if (type === "cantor") {
+    // Compute only the final-level segments (no stacking)
     let segments: [number, number][] = [[0, 100]];
-    const rows: React.ReactNode[] = [];
-    for (let level = 0; level <= iterations; level++) {
-      rows.push(...segments.map(([x, width], index) => (
-        <rect key={`${level}-${index}`} x={x} y={8 + level * 13} width={Math.max(width, 0.4)} height="4" rx="1" />
-      )));
-      segments = segments.flatMap(([x, width]) => [[x, width / 3], [x + width * 2 / 3, width / 3]] as [number, number][]);
+    for (let level = 0; level < iterations; level++) {
+      segments = segments.flatMap(([x, width]) => [
+        [x, width / 3],
+        [x + (width * 2) / 3, width / 3],
+      ] as [number, number][]);
     }
-    return <svg viewBox="-2 0 104 105" className="h-[220px] w-full p-5" fill={color} preserveAspectRatio="xMidYMid meet">{rows}</svg>;
+    const barH = 18;
+    const rects = segments.map(([x, width], index) => (
+      <rect key={index} x={x} y={41} width={Math.max(width, 0.3)} height={barH} rx="2" />
+    ));
+    return (
+      <svg viewBox="-2 0 104 100" className="h-[220px] w-full p-5" fill={color} preserveAspectRatio="xMidYMid meet">
+        {rects}
+      </svg>
+    );
   }
 
   if (type === "koch") {
