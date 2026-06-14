@@ -27,16 +27,16 @@ type Preset = { id: string; label: string; sub: string; a: { r: number; i: numbe
 
 const PRESETS: Preset[] = [
   { id: "classic", label: "Clássico", sub: "z² + c", a: { r: 1, i: 0 }, p: 2 },
-  { id: "cubic",   label: "Cúbico",   sub: "z³ + c", a: { r: 1, i: 0 }, p: 3 },
-  { id: "p4",      label: "Potência 4", sub: "z⁴ + c", a: { r: 1, i: 0 }, p: 4 },
+  { id: "cubic", label: "Cúbico", sub: "z³ + c", a: { r: 1, i: 0 }, p: 3 },
+  { id: "p4", label: "Potência 4", sub: "z⁴ + c", a: { r: 1, i: 0 }, p: 4 },
 ];
 
 const PALETTES: { id: PaletteType; label: string; icon: React.ReactNode; preview: string[] }[] = [
-  { id: "default",   label: "Clássico",  icon: <SunMedium className="h-3.5 w-3.5" />,  preview: ["#283593","#42a5f5","#fff176","#ef6c00"] },
-  { id: "fire",      label: "Fogo",      icon: <Flame className="h-3.5 w-3.5" />,       preview: ["#1a0533","#8b1a2e","#e64a19","#ffd54f"] },
-  { id: "ocean",     label: "Oceano",    icon: <Waves className="h-3.5 w-3.5" />,       preview: ["#000428","#004e92","#00bcd4","#e0f7fa"] },
-  { id: "grayscale", label: "Cinza",     icon: <Palette className="h-3.5 w-3.5" />,     preview: ["#111","#555","#aaa","#eee"] },
-  { id: "rainbow",   label: "Arco-íris", icon: <Rainbow className="h-3.5 w-3.5" />,    preview: ["#f44336","#ff9800","#4caf50","#2196f3"] },
+  { id: "default", label: "Clássico", icon: <SunMedium className="h-3.5 w-3.5" />, preview: ["#283593", "#42a5f5", "#fff176", "#ef6c00"] },
+  { id: "fire", label: "Fogo", icon: <Flame className="h-3.5 w-3.5" />, preview: ["#1a0533", "#8b1a2e", "#e64a19", "#ffd54f"] },
+  { id: "ocean", label: "Oceano", icon: <Waves className="h-3.5 w-3.5" />, preview: ["#000428", "#004e92", "#00bcd4", "#e0f7fa"] },
+  { id: "grayscale", label: "Cinza", icon: <Palette className="h-3.5 w-3.5" />, preview: ["#111", "#555", "#aaa", "#eee"] },
+  { id: "rainbow", label: "Arco-íris", icon: <Rainbow className="h-3.5 w-3.5" />, preview: ["#f44336", "#ff9800", "#4caf50", "#2196f3"] },
 ];
 
 type HistoryEntry = {
@@ -70,22 +70,22 @@ function readLabState(): SavedLabState {
 
 function PlanoComplexo() {
   const initial = useRef(readLabState()).current;
-  const [preset, setPreset]         = useState(initial.preset);
-  const [a, setA]                   = useState(initial.a);
-  const [p, setP]                   = useState(initial.p);
+  const [preset, setPreset] = useState(initial.preset);
+  const [a, setA] = useState(initial.a);
+  const [p, setP] = useState(initial.p);
   const [iterations, setIterations] = useState(initial.iterations);
-  const [view, setView]             = useState(initial.view);
-  const [animating, setAnimating]   = useState(false);
-  const [palette, setPalette]       = useState<PaletteType>(initial.palette);
+  const [view, setView] = useState(initial.view);
+  const [animating, setAnimating] = useState(false);
+  const [palette, setPalette] = useState<PaletteType>(initial.palette);
   const [juliaPoint, setJuliaPoint] = useState<{ x: number; y: number } | null>(initial.juliaPoint);
-  const [juliaReal, setJuliaReal]   = useState(initial.juliaPoint?.x.toString() ?? "-0.7");
-  const [juliaImag, setJuliaImag]   = useState(initial.juliaPoint?.y.toString() ?? "0.27015");
+  const [juliaReal, setJuliaReal] = useState(initial.juliaPoint?.x.toString() ?? "-0.7");
+  const [juliaImag, setJuliaImag] = useState(initial.juliaPoint?.y.toString() ?? "0.27015");
   const [juliaError, setJuliaError] = useState<{ re?: boolean; im?: boolean }>({});
   const [juliaClickMode, setJuliaClickMode] = useState(false);
-  const [tourOpen, setTourOpen]     = useState(false);
+  const [tourOpen, setTourOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
-  const [history, setHistory]       = useState<HistoryEntry[]>(() => {
+  const [history, setHistory] = useState<HistoryEntry[]>(() => {
     try {
       return JSON.parse(localStorage.getItem("fractalclab_history") ?? "[]");
     } catch { return []; }
@@ -93,7 +93,7 @@ function PlanoComplexo() {
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const juliaCanvasRef = useRef<HTMLCanvasElement>(null);
-  const rafRef    = useRef<number | null>(null);
+  const rafRef = useRef<number | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedRef = useRef<HistoryEntry | null>(null);
 
@@ -155,10 +155,10 @@ function PlanoComplexo() {
         if (juliaClickMode) setJuliaClickMode(false);
         else if (juliaPoint) setJuliaPoint(null);
       }
-      else if (e.key === "ArrowLeft")  { e.preventDefault(); setView((v) => ({ ...v, cx: v.cx - 40 * v.scale })); }
+      else if (e.key === "ArrowLeft") { e.preventDefault(); setView((v) => ({ ...v, cx: v.cx - 40 * v.scale })); }
       else if (e.key === "ArrowRight") { e.preventDefault(); setView((v) => ({ ...v, cx: v.cx + 40 * v.scale })); }
-      else if (e.key === "ArrowUp")    { e.preventDefault(); setView((v) => ({ ...v, cy: v.cy - 40 * v.scale })); }
-      else if (e.key === "ArrowDown")  { e.preventDefault(); setView((v) => ({ ...v, cy: v.cy + 40 * v.scale })); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); setView((v) => ({ ...v, cy: v.cy - 40 * v.scale })); }
+      else if (e.key === "ArrowDown") { e.preventDefault(); setView((v) => ({ ...v, cy: v.cy + 40 * v.scale })); }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -246,14 +246,14 @@ function PlanoComplexo() {
       <main className="flex-1 overflow-x-hidden">
         <div className="mx-auto max-w-[1400px] px-4 md:px-8 py-8">
           {/* Header */}
-          <header className="mb-6 flex items-start justify-between gap-4 pl-14 md:pl-0">
-            <div>
+          <header className="mb-6 flex flex-col md:flex-row md:items-start justify-between gap-5 pt-16 md:pt-0">
+            <div className="flex-1 w-full px-2 md:px-0">
               <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-foreground">Laboratório de Fractais</h1>
-              <p className="mt-1 text-sm text-muted-foreground">
+              <p className="mt-2 text-base md:text-sm text-muted-foreground">
                 Altere os parâmetros, observe o fractal e descubra padrões incríveis!
               </p>
             </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="flex items-center gap-2 flex-shrink-0 self-start md:self-auto w-full md:w-auto overflow-x-auto pb-2 md:pb-0 px-2 md:px-0">
               <button
                 onClick={() => setTourOpen(true)}
                 aria-label="Como funciona?"
@@ -330,11 +330,11 @@ function PlanoComplexo() {
                     <div className="absolute left-0 top-0 z-10 flex h-full flex-col justify-between py-3 pl-1 text-[10px] text-muted-foreground pointer-events-none">
                       <span>2</span><span>1</span><span>0</span><span>-1</span><span>-2</span>
                     </div>
-                    <div className="absolute -rotate-90 left-[-18px] top-1/2 text-[10px] text-muted-foreground pointer-events-none">Imaginário</div>
+                    <div className="absolute -rotate-90 left-[-27px] top-1/2 text-[10px] text-muted-foreground pointer-events-none">Imaginário</div>
                     <div className="absolute bottom-0 left-0 z-10 flex w-full justify-between px-6 pb-1 text-[10px] text-muted-foreground pointer-events-none">
                       <span>-2</span><span>-1</span><span>0</span><span>1</span><span>2</span>
                     </div>
-                    <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[10px] text-muted-foreground pointer-events-none">Real</div>
+                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 text-[10px] text-muted-foreground pointer-events-none">Real</div>
                     <div className="absolute inset-0 px-6 py-3">
                       <MandelbrotCanvas
                         power={p}
@@ -349,7 +349,7 @@ function PlanoComplexo() {
                       />
                     </div>
                     {/* Zoom controls */}
-                    <div className="absolute bottom-12 left-3 z-10 flex flex-col gap-1 rounded-xl border border-border bg-card p-1 shadow-sm">
+                    <div className="absolute top-1/2 -translate-y-1/2 -right-3.5 z-10 flex flex-col gap-1 rounded-xl border border-border bg-card p-0.4 shadow-sm">
                       <div className="px-1 pt-0.5 text-center font-mono text-[9px] font-semibold text-muted-foreground" title="Nível de zoom atual">{zoomLabel}</div>
                       <button onClick={() => zoom(0.7)} aria-label="Aproximar" title="Aproximar (+)" className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary transition-colors">
                         <ZoomIn className="h-4 w-4" />
@@ -384,7 +384,7 @@ function PlanoComplexo() {
                           iterations={iterations}
                           palette={palette}
                           view={{ cx: 0, cy: 0, scale: 4 / 600 }}
-                          onViewChange={() => {}}
+                          onViewChange={() => { }}
                           isJulia
                           juliaC={juliaPoint}
                           canvasRef={juliaCanvasRef}
@@ -401,11 +401,10 @@ function PlanoComplexo() {
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                   <button
                     onClick={() => setJuliaClickMode((v) => !v)}
-                    className={`inline-flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs font-medium transition-colors ${
-                      juliaClickMode
-                        ? "border-primary/40 bg-accent text-primary"
-                        : "border-border bg-card text-muted-foreground hover:bg-secondary"
-                    }`}
+                    className={`inline-flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs font-medium transition-colors ${juliaClickMode
+                      ? "border-primary/40 bg-accent text-primary"
+                      : "border-border bg-card text-muted-foreground hover:bg-secondary"
+                      }`}
                   >
                     <Target className="h-3.5 w-3.5" />
                     {juliaClickMode ? "Cancelar seleção" : "Ver Julia (clique no fractal)"}
@@ -530,11 +529,10 @@ function PlanoComplexo() {
                     <button
                       key={pal.id}
                       onClick={() => setPalette(pal.id)}
-                      className={`flex flex-col items-center gap-2 rounded-xl border p-3 text-xs font-medium transition-colors ${
-                        palette === pal.id
-                          ? "border-primary/40 bg-accent text-primary"
-                          : "border-border bg-card text-muted-foreground hover:bg-secondary"
-                      }`}
+                      className={`flex flex-col items-center gap-2 rounded-xl border p-3 text-xs font-medium transition-colors ${palette === pal.id
+                        ? "border-primary/40 bg-accent text-primary"
+                        : "border-border bg-card text-muted-foreground hover:bg-secondary"
+                        }`}
                     >
                       <div className="flex gap-0.5 rounded-md overflow-hidden h-4">
                         {pal.preview.map((c, i) => (
@@ -593,9 +591,8 @@ function PlanoComplexo() {
                       <button
                         key={pr.id}
                         onClick={() => applyPreset(pr.id)}
-                        className={`w-full rounded-xl border px-4 py-3 text-center transition-colors ${
-                          active ? "border-primary/40 bg-accent text-primary" : "border-border bg-card hover:bg-secondary"
-                        }`}
+                        className={`w-full rounded-xl border px-4 py-3 text-center transition-colors ${active ? "border-primary/40 bg-accent text-primary" : "border-border bg-card hover:bg-secondary"
+                          }`}
                       >
                         <div className="text-sm font-semibold">{pr.label}</div>
                         <div className={`mt-0.5 text-xs italic ${active ? "text-primary/70" : "text-muted-foreground"}`}>{pr.sub}</div>
