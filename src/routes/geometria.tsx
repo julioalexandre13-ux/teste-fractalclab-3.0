@@ -329,7 +329,7 @@ function Geometria() {
                 curiosity={FRACTAL_INFO.cantor.topFact}
                 mathFact={FRACTAL_INFO.cantor.mathFact}
                 dim={FRACTAL_INFO.cantor.dim}
-                visual={<CantorCanvas iterations={cantorIter} color="oklch(0.55 0.16 150)" />}
+                visual={<ResponsiveFractal type="cantor" iterations={cantorIter} color="oklch(0.55 0.16 150)" />}
                 highlight={tab === "cantor"}
               />}
               {tab === "koch" && <FractalBlock
@@ -344,7 +344,7 @@ function Geometria() {
                 curiosity={FRACTAL_INFO.koch.topFact}
                 mathFact={FRACTAL_INFO.koch.mathFact}
                 dim={FRACTAL_INFO.koch.dim}
-                visual={<KochCanvas iterations={kochIter} color="oklch(0.55 0.18 255)" />}
+                visual={<ResponsiveFractal type="koch" iterations={kochIter} color="oklch(0.55 0.18 255)" />}
                 highlight={tab === "koch"}
               />}
               {tab === "sierpinski" && <FractalBlock
@@ -359,7 +359,7 @@ function Geometria() {
                 curiosity={FRACTAL_INFO.sierpinski.topFact}
                 mathFact={FRACTAL_INFO.sierpinski.mathFact}
                 dim={FRACTAL_INFO.sierpinski.dim}
-                visual={<SierpinskiCanvas iterations={sierIter} color="oklch(0.5 0.2 300)" />}
+                visual={<ResponsiveFractal type="sierpinski" iterations={sierIter} color="oklch(0.5 0.2 300)" />}
                 highlight={tab === "sierpinski"}
               />}
             </div>
