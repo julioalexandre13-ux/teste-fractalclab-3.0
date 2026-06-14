@@ -442,7 +442,7 @@ function FractalBlock({
         highlight ? "border-primary/30 ring-1 ring-primary/10" : "border-border"
       }`}
     >
-      <div className="grid min-w-0 grid-cols-1 gap-5 xl:grid-cols-[220px_minmax(0,1fr)]">
+      <div className="grid min-w-0 grid-cols-1 gap-5 lg:grid-cols-[220px_minmax(0,1fr)]">
         {/* Left: controls */}
         <div>
           <h2 className="flex items-center gap-2 text-base font-semibold" style={{ color: colorHex }}>
@@ -478,7 +478,7 @@ function FractalBlock({
         <div className="min-w-0 min-h-[220px] overflow-hidden rounded-xl bg-secondary/30">{visual}</div>
 
         {/* Right: info */}
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 xl:col-span-2">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:col-span-2">
           <div className="rounded-xl p-3" style={{ backgroundColor: softVar }}>
             <div className="text-xs font-semibold" style={{ color: colorHex }}>◐ O que acontece?</div>
             <p className="mt-1 text-xs text-muted-foreground">{what}</p>
