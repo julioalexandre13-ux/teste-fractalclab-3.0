@@ -80,19 +80,21 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
   );
 }
 
-export function Sidebar() {
+export function Sidebar({ collapseUntilLarge = false }: { collapseUntilLarge?: boolean }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const desktopClass = collapseUntilLarge ? "hidden lg:flex" : "hidden md:flex";
+  const mobileClass = collapseUntilLarge ? "lg:hidden" : "md:hidden";
 
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex w-[280px] shrink-0 flex-col border-r border-border bg-card">
+      <aside className={`${desktopClass} w-[280px] shrink-0 flex-col border-r border-border bg-card`}>
         <SidebarContent />
       </aside>
 
       {/* Mobile hamburger button */}
       <button
-        className="md:hidden fixed top-4 left-4 z-40 flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card shadow-md text-foreground"
+        className={`${mobileClass} fixed top-4 left-4 z-40 flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card shadow-md text-foreground`}
         onClick={() => setMobileOpen(true)}
         aria-label="Abrir menu"
       >
@@ -104,11 +106,11 @@ export function Sidebar() {
         <>
           {/* Backdrop */}
           <div
-            className="md:hidden fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+            className={`${mobileClass} fixed inset-0 z-40 bg-foreground/50 backdrop-blur-sm`}
             onClick={() => setMobileOpen(false)}
           />
           {/* Drawer */}
-          <aside className="md:hidden fixed left-0 top-0 bottom-0 z-50 w-[280px] bg-card border-r border-border shadow-2xl flex flex-col animate-in slide-in-from-left duration-200">
+          <aside className={`${mobileClass} fixed left-0 top-0 bottom-0 z-50 w-[280px] bg-card border-r border-border shadow-2xl flex flex-col animate-in slide-in-from-left duration-200`}>
             <button
               className="absolute top-4 right-4 flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary"
               onClick={() => setMobileOpen(false)}
