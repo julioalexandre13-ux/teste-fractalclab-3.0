@@ -222,6 +222,13 @@ function PlanoComplexo() {
                 <History className="h-4 w-4" />
               </button>
               <button
+                onClick={resetAll}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground shadow-sm hover:bg-secondary transition-colors"
+                title="Restaurar padrão"
+              >
+                <RotateCcw className="h-4 w-4" />
+              </button>
+              <button
                 onClick={saveImage}
                 className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground shadow-sm hover:bg-secondary transition-colors"
                 title="Salvar imagem"
@@ -327,6 +334,7 @@ function PlanoComplexo() {
                           onViewChange={() => {}}
                           isJulia
                           juliaC={juliaPoint}
+                          canvasRef={juliaCanvasRef}
                         />
                       </div>
                       <div className="pointer-events-none absolute bottom-2 left-2 rounded-md bg-black/60 px-2 py-1 font-mono text-[10px] text-white/80">
@@ -349,6 +357,27 @@ function PlanoComplexo() {
                     <Target className="h-3.5 w-3.5" />
                     {juliaClickMode ? "Cancelar seleção" : "Ver Julia (clique no fractal)"}
                   </button>
+                  <div className="flex items-center gap-1.5 rounded-xl border border-border bg-card p-1">
+                    <span className="pl-1 text-[11px] text-muted-foreground">c =</span>
+                    <input
+                      aria-label="Parte real de c"
+                      value={juliaReal}
+                      onChange={(e) => setJuliaReal(e.target.value)}
+                      className="w-20 rounded-lg border border-input bg-background px-2 py-1 text-xs"
+                      inputMode="decimal"
+                      placeholder="real"
+                    />
+                    <input
+                      aria-label="Parte imaginária de c"
+                      value={juliaImag}
+                      onChange={(e) => setJuliaImag(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && openTypedJulia()}
+                      className="w-20 rounded-lg border border-input bg-background px-2 py-1 text-xs"
+                      inputMode="decimal"
+                      placeholder="imag."
+                    />
+                    <button onClick={openTypedJulia} className="rounded-lg bg-primary px-2 py-1 text-xs font-medium text-primary-foreground">Abrir</button>
+                  </div>
                   <button
                     onClick={saveImage}
                     className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-secondary transition-colors"
@@ -569,10 +598,29 @@ function PlanoComplexo() {
                     <div className="mt-0.5 font-mono text-[10px] text-muted-foreground">
                       iter={entry.iterations} • cx={entry.view.cx.toFixed(3)}
                     </div>
+                    <div className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-primary">
+                      <RotateCcw className="h-3 w-3" /> Restaurar exploração
+                    </div>
                   </button>
                 ))}
               </div>
             )}
+          </div>
+        </div>
+      )}
+      {saveOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/40 p-4" onClick={(e) => e.target === e.currentTarget && setSaveOpen(false)}>
+          <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-5 shadow-2xl">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-foreground">Qual imagem deseja baixar?</h2>
+              <button onClick={() => setSaveOpen(false)} className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">O conjunto de Julia está aberto. Escolha uma opção:</p>
+            <div className="mt-4 grid gap-2">
+              <button onClick={() => { downloadCanvas(canvasRef.current, "mandelbrot"); setSaveOpen(false); }} className="rounded-xl border border-border px-4 py-2 text-sm font-medium hover:bg-secondary">Mandelbrot</button>
+              <button onClick={() => { downloadCanvas(juliaCanvasRef.current, "julia"); setSaveOpen(false); }} className="rounded-xl border border-border px-4 py-2 text-sm font-medium hover:bg-secondary">Julia</button>
+              <button onClick={() => { downloadCanvas(canvasRef.current, "mandelbrot"); downloadCanvas(juliaCanvasRef.current, "julia"); setSaveOpen(false); }} className="rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">Baixar os dois</button>
+            </div>
           </div>
         </div>
       )}
