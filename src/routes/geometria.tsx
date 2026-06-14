@@ -87,8 +87,7 @@ function KochCanvas({ iterations, color }: { iterations: number; color: string }
     if (!ctx) return;
 
     const W = canvas.offsetWidth || 600;
-    const rowH = 60;
-    const H = rowH * (iterations + 1);
+    const H = 260;
     canvas.width = W;
     canvas.height = H;
     ctx.clearRect(0, 0, W, H);
@@ -116,36 +115,27 @@ function KochCanvas({ iterations, color }: { iterations: number; color: string }
       return pts;
     }
 
-    for (let level = 0; level <= iterations; level++) {
-      const pts = kochPoints(level);
-      const offsetY = level * rowH + rowH * 0.6;
-      const offsetX = 28;
-      const scale = (W - 36) / 100;
-
-      // Label
-      ctx.fillStyle = color + "99";
-      ctx.font = "10px monospace";
-      ctx.fillText(String(level), 2, offsetY + 4);
-
-      // Path
-      ctx.beginPath();
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 1.5;
-      for (let i = 0; i < pts.length; i++) {
-        const x = offsetX + pts[i][0] * scale;
-        const y = offsetY - pts[i][1] * scale * 0.8;
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      }
-      ctx.stroke();
+    const pts = kochPoints(iterations);
+    const offsetY = H * 0.68;
+    const offsetX = 24;
+    const scale = (W - 48) / 100;
+    ctx.beginPath();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    for (let i = 0; i < pts.length; i++) {
+      const x = offsetX + pts[i][0] * scale;
+      const y = offsetY - pts[i][1] * scale * 0.8;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
     }
+    ctx.stroke();
   }, [iterations, color]);
 
   return (
     <canvas
       ref={canvasRef}
       className="w-full rounded-lg"
-      style={{ minHeight: Math.max(120, 60 * (iterations + 1)) }}
+      style={{ minHeight: 260 }}
     />
   );
 }
@@ -160,8 +150,7 @@ function SierpinskiCanvas({ iterations, color }: { iterations: number; color: st
     if (!ctx) return;
 
     const W = canvas.offsetWidth || 600;
-    const itemSize = Math.min(100, (W - 20) / (iterations + 1));
-    const H = itemSize * 1.1;
+    const H = 300;
     canvas.width = W;
     canvas.height = H;
     ctx.clearRect(0, 0, W, H);
@@ -192,24 +181,12 @@ function SierpinskiCanvas({ iterations, color }: { iterations: number; color: st
 
     ctx.fillStyle = color;
 
-    for (let n = 0; n <= iterations; n++) {
-      const size = itemSize * 0.85;
-      const startX = n * itemSize + itemSize * 0.075;
-      const startY = H * 0.05;
-      const h = size * (Math.sqrt(3) / 2);
-
-      const ax = startX + size / 2, ay = startY;
-      const bx = startX + size, by = startY + h;
-      const cx2 = startX, cy = startY + h;
-
-      // Label
-      ctx.fillStyle = color + "99";
-      ctx.font = "9px monospace";
-      ctx.fillText(String(n), startX + size / 2 - 4, H - 2);
-
-      ctx.fillStyle = color;
-      drawSierpinski(n, ax, ay, bx, by, cx2, cy);
-    }
+    const size = Math.min(W - 40, H / (Math.sqrt(3) / 2) - 24);
+    const startX = (W - size) / 2;
+    const startY = 12;
+    const h = size * (Math.sqrt(3) / 2);
+    ctx.fillStyle = color;
+    drawSierpinski(iterations, startX + size / 2, startY, startX + size, startY + h, startX, startY + h);
   }, [iterations, color]);
 
   return (
@@ -226,10 +203,16 @@ function SierpinskiCanvas({ iterations, color }: { iterations: number; color: st
 // ---------------------------------------------------------------------------
 
 function Geometria() {
-  const [tab, setTab] = useState<Tab>("cantor");
-  const [cantorIter, setCantorIter] = useState(5);
-  const [kochIter, setKochIter] = useState(4);
-  const [sierIter, setSierIter] = useState(5);
+  const saved = typeof window === "undefined" ? null : localStorage.getItem("fractalclab_geometry_state");
+  const initial = saved ? JSON.parse(saved) as { tab: Tab; cantorIter: number; kochIter: number; sierIter: number } : null;
+  const [tab, setTab] = useState<Tab>(initial?.tab ?? "cantor");
+  const [cantorIter, setCantorIter] = useState(initial?.cantorIter ?? 5);
+  const [kochIter, setKochIter] = useState(initial?.kochIter ?? 4);
+  const [sierIter, setSierIter] = useState(initial?.sierIter ?? 5);
+
+  useEffect(() => {
+    localStorage.setItem("fractalclab_geometry_state", JSON.stringify({ tab, cantorIter, kochIter, sierIter }));
+  }, [tab, cantorIter, kochIter, sierIter]);
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -242,14 +225,6 @@ function Geometria() {
               <p className="mt-1 text-sm text-muted-foreground">
                 Construa e explore fractais clássicos da geometria!
               </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <button className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-3 md:px-4 py-2 text-sm font-medium text-foreground shadow-sm hover:bg-secondary transition-colors">
-                <HelpCircle className="h-4 w-4" /> <span className="hidden sm:inline">Como funciona?</span>
-              </button>
-              <button className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground shadow-sm hover:bg-secondary transition-colors">
-                <Settings className="h-4 w-4" />
-              </button>
             </div>
           </header>
 
@@ -271,7 +246,7 @@ function Geometria() {
               </section>
 
               {/* Fractal blocks */}
-              <FractalBlock
+              {tab === "cantor" && <FractalBlock
                 title="Conjunto de Cantor"
                 desc="Remova o terço médio de um segmento repetidamente."
                 color="cantor"
@@ -285,8 +260,8 @@ function Geometria() {
                 dim={FRACTAL_INFO.cantor.dim}
                 visual={<CantorCanvas iterations={cantorIter} color="oklch(0.55 0.16 150)" />}
                 highlight={tab === "cantor"}
-              />
-              <FractalBlock
+              />}
+              {tab === "koch" && <FractalBlock
                 title="Curva de Koch"
                 desc='Substitua o terço médio de cada segmento por dois segmentos formando um "pico".'
                 color="koch"
@@ -300,8 +275,8 @@ function Geometria() {
                 dim={FRACTAL_INFO.koch.dim}
                 visual={<KochCanvas iterations={kochIter} color="oklch(0.55 0.18 255)" />}
                 highlight={tab === "koch"}
-              />
-              <FractalBlock
+              />}
+              {tab === "sierpinski" && <FractalBlock
                 title="Triângulo de Sierpinski"
                 desc="Remova o triângulo central de um triângulo e repita o processo."
                 color="sierpinski"
@@ -315,7 +290,7 @@ function Geometria() {
                 dim={FRACTAL_INFO.sierpinski.dim}
                 visual={<SierpinskiCanvas iterations={sierIter} color="oklch(0.5 0.2 300)" />}
                 highlight={tab === "sierpinski"}
-              />
+              />}
             </div>
 
             {/* Sidebar */}
