@@ -36,6 +36,8 @@ export function MandelbrotCanvas({
   const workerRef = useRef<Worker | null>(null);
   const dragRef = useRef<{ x: number; y: number } | null>(null);
   const pinchRef = useRef<number | null>(null);
+  const requestRef = useRef(0);
+  const paintedRef = useRef(false);
 
   const [loading, setLoading] = useState(false);
   const [coords, setCoords] = useState<{ re: number; im: number } | null>(null);
@@ -62,12 +64,17 @@ export function MandelbrotCanvas({
     const rect = wrap.getBoundingClientRect();
     const W = Math.max(1, Math.floor(rect.width));
     const H = Math.max(1, Math.floor(rect.height));
-    canvas.width = W;
-    canvas.height = H;
+    if (canvas.width !== W || canvas.height !== H) {
+      canvas.width = W;
+      canvas.height = H;
+      paintedRef.current = false;
+    }
 
-    setLoading(true);
+    if (!paintedRef.current) setLoading(true);
+    const requestId = ++requestRef.current;
 
     const msg: WorkerRequest = {
+      requestId,
       width: W,
       height: H,
       power,
@@ -82,12 +89,14 @@ export function MandelbrotCanvas({
 
     // Replace previous handler
     worker.onmessage = (e: MessageEvent) => {
-      const { buffer, width, height } = e.data;
+      const { requestId: completedId, buffer, width, height } = e.data;
+      if (completedId !== requestRef.current) return;
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
       const arr = new Uint8ClampedArray(buffer);
       const imageData = new ImageData(arr, width, height);
       ctx.putImageData(imageData, 0, 0);
+      paintedRef.current = true;
       setLoading(false);
     };
 
@@ -242,8 +251,8 @@ export function MandelbrotCanvas({
       <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />
 
       {/* Loading overlay */}
-      {loading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-[1px]">
+      {loading && !paintedRef.current && (
+        <div className="absolute inset-0 flex items-center justify-center bg-foreground/30 backdrop-blur-[1px]">
           <div className="flex flex-col items-center gap-2">
             <div className="h-7 w-7 animate-spin rounded-full border-2 border-white/20 border-t-white" />
             <span className="text-[11px] text-white/70">Renderizando…</span>

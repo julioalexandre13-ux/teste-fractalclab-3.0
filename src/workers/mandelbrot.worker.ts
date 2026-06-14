@@ -5,6 +5,7 @@
  */
 
 export type WorkerRequest = {
+  requestId: number;
   width: number;
   height: number;
   power: number;
@@ -18,6 +19,7 @@ export type WorkerRequest = {
 };
 
 export type WorkerResponse = {
+  requestId: number;
   buffer: ArrayBuffer;
   width: number;
   height: number;
@@ -114,7 +116,7 @@ function applyPalette(
 }
 
 self.onmessage = (e: MessageEvent<WorkerRequest>) => {
-  const { width, height, power, aReal, aImag, iterations, view, palette, isJulia, juliaC } = e.data;
+  const { requestId, width, height, power, aReal, aImag, iterations, view, palette, isJulia, juliaC } = e.data;
   const buf = new Uint8ClampedArray(width * height * 4);
   const maxIter = iterations;
   const p = power;
@@ -175,7 +177,7 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
   const transferable = buf.buffer;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (self as any).postMessage(
-    { buffer: transferable, width, height },
+    { requestId, buffer: transferable, width, height },
     [transferable]
   );
 };
