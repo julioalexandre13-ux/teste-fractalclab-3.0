@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState, useCallback } from "react";
 import {
-  HelpCircle, Plus, Minus, Maximize2, Play, Pause,
+  HelpCircle, ZoomIn, ZoomOut, Maximize2, Play, Pause,
   Target, Loader2, Sparkles, Lightbulb, Download, History,
   X, Flame, Waves, SunMedium, Rainbow, Palette, RotateCcw,
 } from "lucide-react";
@@ -80,6 +80,7 @@ function PlanoComplexo() {
   const [juliaPoint, setJuliaPoint] = useState<{ x: number; y: number } | null>(initial.juliaPoint);
   const [juliaReal, setJuliaReal]   = useState(initial.juliaPoint?.x.toString() ?? "-0.7");
   const [juliaImag, setJuliaImag]   = useState(initial.juliaPoint?.y.toString() ?? "0.27015");
+  const [juliaError, setJuliaError] = useState<{ re?: boolean; im?: boolean }>({});
   const [juliaClickMode, setJuliaClickMode] = useState(false);
   const [tourOpen, setTourOpen]     = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -94,29 +95,38 @@ function PlanoComplexo() {
   const juliaCanvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef    = useRef<number | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastSavedRef = useRef<HistoryEntry | null>(null);
 
   useEffect(() => {
     localStorage.setItem("fractalclab_lab_state", JSON.stringify({ preset, a, p, iterations, view, palette, juliaPoint }));
   }, [preset, a, p, iterations, view, palette, juliaPoint]);
 
-  // Save history entry after parameter changes (debounced)
+  // Save history only on significant changes (debounced)
   useEffect(() => {
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
+      const last = lastSavedRef.current ?? history[0] ?? null;
+      const ratio = last && view.scale > 0 ? last.view.scale / view.scale : 1;
+      const significant =
+        !last ||
+        last.preset !== preset ||
+        last.palette !== palette ||
+        Math.abs(last.iterations - iterations) >= 10 ||
+        ratio > 2 || ratio < 0.5;
+      if (!significant) return;
       const entry: HistoryEntry = {
-        id: `${Date.now()}`,
-        preset, a, p, iterations, view, palette,
-        timestamp: Date.now(),
+        id: `${Date.now()}`, preset, a, p, iterations, view, palette, timestamp: Date.now(),
       };
+      lastSavedRef.current = entry;
       setHistory((prev) => {
-        const next = [entry, ...prev.filter((h) => h.id !== entry.id)].slice(0, 5);
+        const next = [entry, ...prev].slice(0, 5);
         localStorage.setItem("fractalclab_history", JSON.stringify(next));
         return next;
       });
     }, 1500);
     return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [preset, a, p, iterations, palette]);
+  }, [preset, a, p, iterations, palette, view]);
 
   // Animate iterations
   useEffect(() => {
@@ -132,6 +142,27 @@ function PlanoComplexo() {
     rafRef.current = requestAnimationFrame(tick);
     return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
   }, [animating]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      if (e.key === "+" || e.key === "=") { e.preventDefault(); setView((v) => ({ ...v, scale: v.scale * 0.7 })); }
+      else if (e.key === "-" || e.key === "_") { e.preventDefault(); setView((v) => ({ ...v, scale: v.scale * 1.4 })); }
+      else if (e.key === "r" || e.key === "R") { e.preventDefault(); setView({ cx: -0.5, cy: 0, scale: 4 / 600 }); }
+      else if (e.key === "Escape") {
+        if (juliaClickMode) setJuliaClickMode(false);
+        else if (juliaPoint) setJuliaPoint(null);
+      }
+      else if (e.key === "ArrowLeft")  { e.preventDefault(); setView((v) => ({ ...v, cx: v.cx - 40 * v.scale })); }
+      else if (e.key === "ArrowRight") { e.preventDefault(); setView((v) => ({ ...v, cx: v.cx + 40 * v.scale })); }
+      else if (e.key === "ArrowUp")    { e.preventDefault(); setView((v) => ({ ...v, cy: v.cy - 40 * v.scale })); }
+      else if (e.key === "ArrowDown")  { e.preventDefault(); setView((v) => ({ ...v, cy: v.cy + 40 * v.scale })); }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [juliaClickMode, juliaPoint]);
 
   function applyPreset(id: string) {
     const found = PRESETS.find((x) => x.id === id);
@@ -165,15 +196,25 @@ function PlanoComplexo() {
   }
 
   function resetAll() {
+    if (typeof window !== "undefined" && !window.confirm("Restaurar todos os parâmetros para o padrão?")) return;
     setPreset(DEFAULT_STATE.preset); setA(DEFAULT_STATE.a); setP(DEFAULT_STATE.p);
     setIterations(DEFAULT_STATE.iterations); setView(DEFAULT_STATE.view);
     setPalette(DEFAULT_STATE.palette); setJuliaPoint(null); setJuliaClickMode(false); setAnimating(false);
+    setJuliaError({});
   }
+
+  const juliaInputsValid = (() => {
+    const x = Number(juliaReal.replace(",", "."));
+    const y = Number(juliaImag.replace(",", "."));
+    return Number.isFinite(x) && Number.isFinite(y);
+  })();
 
   function openTypedJulia() {
     const x = Number(juliaReal.replace(",", "."));
     const y = Number(juliaImag.replace(",", "."));
-    if (Number.isFinite(x) && Number.isFinite(y)) setJuliaPoint({ x, y });
+    const err = { re: !Number.isFinite(x), im: !Number.isFinite(y) };
+    setJuliaError(err);
+    if (!err.re && !err.im) setJuliaPoint({ x, y });
   }
 
   const handleCanvasClick = useCallback((re: number, im: number) => {
@@ -195,6 +236,10 @@ function PlanoComplexo() {
   // Hausdorff dimension (approximate for Mandelbrot family)
   const hausdorffDim = p <= 1 ? "—" : (2 / p).toFixed(3);
 
+  // Zoom level (1x = default scale of 4/600)
+  const zoomLevel = (4 / 600) / view.scale;
+  const zoomLabel = zoomLevel >= 100 ? `${zoomLevel.toFixed(0)}×` : zoomLevel >= 10 ? `${zoomLevel.toFixed(1)}×` : `${zoomLevel.toFixed(2)}×`;
+
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar />
@@ -211,27 +256,32 @@ function PlanoComplexo() {
             <div className="flex items-center gap-2 flex-shrink-0">
               <button
                 onClick={() => setTourOpen(true)}
+                aria-label="Como funciona?"
                 className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-3 md:px-4 py-2 text-sm font-medium text-foreground shadow-sm hover:bg-secondary transition-colors"
               >
                 <HelpCircle className="h-4 w-4" /> <span className="hidden sm:inline">Como funciona?</span>
               </button>
               <button
                 onClick={() => setHistoryOpen(true)}
+                aria-label="Histórico de explorações"
+                title="Histórico de explorações"
                 className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground shadow-sm hover:bg-secondary transition-colors"
               >
                 <History className="h-4 w-4" />
               </button>
               <button
                 onClick={resetAll}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground shadow-sm hover:bg-secondary transition-colors"
+                aria-label="Restaurar padrão"
                 title="Restaurar padrão"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground shadow-sm hover:bg-secondary transition-colors"
               >
                 <RotateCcw className="h-4 w-4" />
               </button>
               <button
                 onClick={saveImage}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground shadow-sm hover:bg-secondary transition-colors"
+                aria-label="Salvar imagem"
                 title="Salvar imagem"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground shadow-sm hover:bg-secondary transition-colors"
               >
                 <Download className="h-4 w-4" />
               </button>
@@ -254,9 +304,9 @@ function PlanoComplexo() {
                     </div>
                   </div>
                   <div className="ml-auto grid grid-cols-3 gap-3">
-                    <ParamField label="A (real)" tone="cantor" value={a.r.toFixed(2)} />
-                    <ParamField label="A (imag)" tone="koch" value={`${a.i >= 0 ? "+" : ""}${a.i.toFixed(2)}i`} />
-                    <ParamField label="P (exp)" tone="destructive" value={p.toFixed(1)} />
+                    <ParamField label="A (real)" tone="cantor" value={a.r.toFixed(2)} tooltip="Parte real do coeficiente A. Escala as órbitas no eixo horizontal." />
+                    <ParamField label="A (imag)" tone="koch" value={`${a.i >= 0 ? "+" : ""}${a.i.toFixed(2)}i`} tooltip="Parte imaginária de A. Rotaciona as órbitas no plano complexo." />
+                    <ParamField label="P (exp)" tone="destructive" value={p.toFixed(1)} tooltip="Expoente P da fórmula z^P + c. Define a simetria do fractal." />
                   </div>
                 </div>
               </section>
@@ -300,13 +350,14 @@ function PlanoComplexo() {
                     </div>
                     {/* Zoom controls */}
                     <div className="absolute bottom-12 left-3 z-10 flex flex-col gap-1 rounded-xl border border-border bg-card p-1 shadow-sm">
-                      <button onClick={() => zoom(0.7)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary transition-colors">
-                        <Plus className="h-4 w-4" />
+                      <div className="px-1 pt-0.5 text-center font-mono text-[9px] font-semibold text-muted-foreground" title="Nível de zoom atual">{zoomLabel}</div>
+                      <button onClick={() => zoom(0.7)} aria-label="Aproximar" title="Aproximar (+)" className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary transition-colors">
+                        <ZoomIn className="h-4 w-4" />
                       </button>
-                      <button onClick={() => zoom(1.4)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary transition-colors">
-                        <Minus className="h-4 w-4" />
+                      <button onClick={() => zoom(1.4)} aria-label="Afastar" title="Afastar (−)" className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary transition-colors">
+                        <ZoomOut className="h-4 w-4" />
                       </button>
-                      <button onClick={resetView} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary transition-colors">
+                      <button onClick={resetView} aria-label="Resetar vista" title="Resetar vista (R)" className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary transition-colors">
                         <Maximize2 className="h-3.5 w-3.5" />
                       </button>
                     </div>
@@ -318,6 +369,8 @@ function PlanoComplexo() {
                       <div className="absolute right-2 top-2 z-10">
                         <button
                           onClick={() => setJuliaPoint(null)}
+                          aria-label="Fechar Julia"
+                          title="Fechar Julia (Esc)"
                           className="flex h-7 w-7 items-center justify-center rounded-lg bg-black/50 text-white hover:bg-black/70 transition-colors"
                         >
                           <X className="h-3.5 w-3.5" />
@@ -365,23 +418,32 @@ function PlanoComplexo() {
                       <span className="pl-1 text-[11px] font-medium text-muted-foreground">Re:</span>
                       <input
                         aria-label="Parte real de c"
+                        aria-invalid={juliaError.re || undefined}
                         value={juliaReal}
-                        onChange={(e) => setJuliaReal(e.target.value)}
-                        className="w-20 rounded-lg border border-input bg-background px-2 py-1 text-xs"
+                        onChange={(e) => { setJuliaReal(e.target.value); setJuliaError((p) => ({ ...p, re: false })); }}
+                        onKeyDown={(e) => e.key === "Enter" && openTypedJulia()}
+                        title={juliaError.re ? "Digite um número válido (ex: -0.7)" : undefined}
+                        className={`w-20 rounded-lg border bg-background px-2 py-1 text-xs ${juliaError.re ? "border-destructive" : "border-input"}`}
                         inputMode="decimal"
                         placeholder="ex: −0.7"
                       />
                       <span className="text-[11px] font-medium text-muted-foreground">Im:</span>
                       <input
                         aria-label="Parte imaginária de c"
+                        aria-invalid={juliaError.im || undefined}
                         value={juliaImag}
-                        onChange={(e) => setJuliaImag(e.target.value)}
+                        onChange={(e) => { setJuliaImag(e.target.value); setJuliaError((p) => ({ ...p, im: false })); }}
                         onKeyDown={(e) => e.key === "Enter" && openTypedJulia()}
-                        className="w-20 rounded-lg border border-input bg-background px-2 py-1 text-xs"
+                        title={juliaError.im ? "Digite um número válido (ex: 0.27)" : undefined}
+                        className={`w-20 rounded-lg border bg-background px-2 py-1 text-xs ${juliaError.im ? "border-destructive" : "border-input"}`}
                         inputMode="decimal"
                         placeholder="ex: 0.27"
                       />
-                      <button onClick={openTypedJulia} className="rounded-lg bg-primary px-2 py-1 text-xs font-medium text-primary-foreground">Abrir</button>
+                      <button
+                        onClick={openTypedJulia}
+                        disabled={!juliaInputsValid}
+                        className="rounded-lg bg-primary px-2 py-1 text-xs font-medium text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+                      >Abrir</button>
                     </div>
                   </div>
                   <button
@@ -435,15 +497,26 @@ function PlanoComplexo() {
                         type="range" min={10} max={200} step={5}
                         value={iterations}
                         onChange={(e) => setIterations(Number(e.target.value))}
+                        list="iter-marks"
                         className="flex-1 accent-primary"
                       />
+                      <datalist id="iter-marks">
+                        <option value="10" />
+                        <option value="50" />
+                        <option value="100" />
+                        <option value="200" />
+                      </datalist>
                       <button
                         onClick={() => setAnimating((x) => !x)}
+                        aria-label={animating ? "Pausar animação" : "Animar iterações"}
                         className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 transition-opacity flex-shrink-0"
                       >
                         {animating ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
                         {animating ? "Pausar" : "Animar"}
                       </button>
+                    </div>
+                    <div className="mt-1 flex justify-between px-0.5 text-[10px] text-muted-foreground">
+                      <span>10</span><span>50</span><span>100</span><span>200</span>
                     </div>
                   </div>
                 </div>
@@ -660,7 +733,7 @@ function SliderField({
   );
 }
 
-function ParamField({ label, value, tone }: { label: string; value: string; tone: "cantor" | "koch" | "destructive" }) {
+function ParamField({ label, value, tone, tooltip }: { label: string; value: string; tone: "cantor" | "koch" | "destructive"; tooltip?: string }) {
   const toneClass = {
     cantor: "border-[oklch(0.7_0.15_150)]/50 bg-[oklch(0.97_0.04_150)]",
     koch: "border-[oklch(0.7_0.15_255)]/50 bg-[oklch(0.97_0.03_255)]",
@@ -672,8 +745,10 @@ function ParamField({ label, value, tone }: { label: string; value: string; tone
     destructive: "text-[oklch(0.55_0.2_25)]",
   }[tone];
   return (
-    <div className="text-center">
-      <div className={`text-[11px] font-semibold ${labelTone}`}>{label}</div>
+    <div className="text-center" title={tooltip}>
+      <div className={`text-[11px] font-semibold ${labelTone} ${tooltip ? "cursor-help" : ""}`}>
+        {label}{tooltip ? <span className="ml-0.5 text-muted-foreground/70">ⓘ</span> : null}
+      </div>
       <div className={`mt-1 rounded-lg border ${toneClass} px-3 py-2 font-mono text-sm font-medium text-foreground`}>{value}</div>
     </div>
   );
