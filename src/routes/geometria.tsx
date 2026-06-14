@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import {
   Lightbulb, Sparkles, RefreshCw, Star,
-  Circle as CircleIcon, Settings2,
+  Circle as CircleIcon, Settings2, Play, Pause, ChevronLeft, ChevronRight, RotateCcw,
 } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
 
@@ -293,18 +293,31 @@ function Geometria() {
     localStorage.setItem("fractalclab_geometry_state", JSON.stringify({ tab, cantorIter, kochIter, sierIter }));
   }, [tab, cantorIter, kochIter, sierIter]);
 
+  function resetGeometry() {
+    if (typeof window !== "undefined" && !window.confirm("Restaurar iterações ao padrão?")) return;
+    setTab("cantor"); setCantorIter(5); setKochIter(4); setSierIter(5);
+  }
+
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar collapseUntilLarge />
       <main className="flex-1 overflow-x-hidden">
         <div className="mx-auto max-w-[1400px] px-4 md:px-8 py-8">
-          <header className="mb-6 flex items-start justify-between gap-4 pl-14 md:pl-0">
+          <header className="mb-6 flex items-start justify-between gap-4 pl-14 lg:pl-0">
             <div>
               <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-foreground">Fractais Geométricos</h1>
               <p className="mt-1 text-sm text-muted-foreground">
                 Construa e explore fractais clássicos da geometria!
               </p>
             </div>
+            <button
+              onClick={resetGeometry}
+              aria-label="Restaurar padrão"
+              title="Restaurar padrão"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground shadow-sm hover:bg-secondary transition-colors flex-shrink-0"
+            >
+              <RotateCcw className="h-4 w-4" />
+            </button>
           </header>
 
           <div className="grid grid-cols-1 2xl:grid-cols-[minmax(0,1fr)_300px] gap-6">
@@ -337,6 +350,7 @@ function Geometria() {
                 curiosity={FRACTAL_INFO.cantor.topFact}
                 mathFact={FRACTAL_INFO.cantor.mathFact}
                 dim={FRACTAL_INFO.cantor.dim}
+                count={`${Math.pow(2, cantorIter).toLocaleString("pt-BR")} segmentos`}
                 visual={<ResponsiveFractal type="cantor" iterations={cantorIter} color="oklch(0.55 0.16 150)" />}
                 highlight={tab === "cantor"}
               />}
@@ -352,6 +366,7 @@ function Geometria() {
                 curiosity={FRACTAL_INFO.koch.topFact}
                 mathFact={FRACTAL_INFO.koch.mathFact}
                 dim={FRACTAL_INFO.koch.dim}
+                count={`${Math.pow(4, kochIter).toLocaleString("pt-BR")} segmentos`}
                 visual={<ResponsiveFractal type="koch" iterations={kochIter} color="oklch(0.55 0.18 255)" />}
                 highlight={tab === "koch"}
               />}
@@ -367,6 +382,7 @@ function Geometria() {
                 curiosity={FRACTAL_INFO.sierpinski.topFact}
                 mathFact={FRACTAL_INFO.sierpinski.mathFact}
                 dim={FRACTAL_INFO.sierpinski.dim}
+                count={`${Math.pow(3, sierIter).toLocaleString("pt-BR")} triângulos`}
                 visual={<ResponsiveFractal type="sierpinski" iterations={sierIter} color="oklch(0.5 0.2 300)" />}
                 highlight={tab === "sierpinski"}
               />}
@@ -485,23 +501,32 @@ function TabBtn({ active, onClick, label, icon }: {
 }
 
 function FractalBlock({
-  title, desc, color, colorHex, iter, setIter, max, what, curiosity, mathFact, dim, visual, highlight,
+  title, desc, color, colorHex, iter, setIter, max, what, curiosity, mathFact, dim, count, visual, highlight,
 }: {
   title: string; desc: string;
   color: "cantor" | "koch" | "sierpinski";
   colorHex: string;
   iter: number; setIter: (n: number) => void; max: number;
-  what: string; curiosity: string; mathFact: string; dim: string;
+  what: string; curiosity: string; mathFact: string; dim: string; count: string;
   visual: React.ReactNode; highlight: boolean;
 }) {
   const softVar = `var(--${color}-soft)`;
+  const [playing, setPlaying] = useState(false);
+
+  useEffect(() => {
+    if (!playing) return;
+    if (iter >= max) { setPlaying(false); return; }
+    const t = setTimeout(() => setIter(iter + 1), 700);
+    return () => clearTimeout(t);
+  }, [playing, iter, max, setIter]);
+
   return (
     <section
       className={`rounded-2xl border bg-card p-6 shadow-sm transition-all ${
         highlight ? "border-primary/30 ring-1 ring-primary/10" : "border-border"
       }`}
     >
-      <div className="grid min-w-0 grid-cols-1 gap-5 lg:grid-cols-[220px_minmax(0,1fr)]">
+      <div className="grid min-w-0 grid-cols-1 gap-5 lg:grid-cols-[240px_minmax(0,1fr)]">
         {/* Left: controls */}
         <div>
           <h2 className="flex items-center gap-2 text-base font-semibold" style={{ color: colorHex }}>
@@ -510,10 +535,16 @@ function FractalBlock({
           </h2>
           <p className="mt-2 text-sm text-muted-foreground">{desc}</p>
 
-          {/* Dimension badge */}
-          <div className="mt-3 inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5" style={{ borderColor: `${colorHex}40`, backgroundColor: softVar }}>
-            <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: colorHex }}>Dim. Hausdorff</span>
-            <span className="font-mono text-xs font-semibold text-foreground">{dim}</span>
+          {/* Dimension + count badges */}
+          <div className="mt-3 flex flex-wrap gap-2">
+            <div className="inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5" style={{ borderColor: `${colorHex}40`, backgroundColor: softVar }}>
+              <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: colorHex }}>Dim.</span>
+              <span className="font-mono text-xs font-semibold text-foreground">{dim}</span>
+            </div>
+            <div className="inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5" style={{ borderColor: `${colorHex}40`, backgroundColor: softVar }} title="Total de elementos nesta iteração">
+              <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: colorHex }}>Total</span>
+              <span className="font-mono text-xs font-semibold text-foreground">{count}</span>
+            </div>
           </div>
 
           <div className="mt-4 rounded-xl border border-border p-3" style={{ backgroundColor: softVar }}>
@@ -526,9 +557,39 @@ function FractalBlock({
               onChange={(e) => setIter(Number(e.target.value))}
               className="mt-2 w-full"
               style={{ accentColor: colorHex }}
+              aria-label="Número de iterações"
             />
-            <div className="mt-1 flex justify-between text-[10px]" style={{ color: colorHex }}>
-              <span>0</span><span>{max}</span>
+            <div className="mt-1 flex items-center justify-between text-[10px]" style={{ color: colorHex }}>
+              <span>0</span>
+              <span className="text-muted-foreground">Atual: <span className="font-semibold" style={{ color: colorHex }}>{iter}</span> · Máx: {max}</span>
+              <span>{max}</span>
+            </div>
+            <div className="mt-3 flex items-center justify-center gap-2">
+              <button
+                onClick={() => setIter(Math.max(0, iter - 1))}
+                disabled={iter <= 0}
+                aria-label="Iteração anterior"
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setPlaying((p) => !p)}
+                aria-label={playing ? "Pausar animação" : "Animar passo a passo"}
+                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90"
+                style={{ backgroundColor: colorHex }}
+              >
+                {playing ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+                {playing ? "Pausar" : "Animar"}
+              </button>
+              <button
+                onClick={() => setIter(Math.min(max, iter + 1))}
+                disabled={iter >= max}
+                aria-label="Próxima iteração"
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
             </div>
           </div>
         </div>

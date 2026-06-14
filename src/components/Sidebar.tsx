@@ -81,8 +81,10 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
 
 export function Sidebar({ collapseUntilLarge = false }: { collapseUntilLarge?: boolean }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
   const desktopClass = collapseUntilLarge ? "hidden lg:flex" : "hidden md:flex";
   const mobileClass = collapseUntilLarge ? "lg:hidden" : "md:hidden";
+  const currentLabel = pathname.startsWith("/geometria") ? "Geométricos" : "Algébricos";
 
   return (
     <>
@@ -93,11 +95,12 @@ export function Sidebar({ collapseUntilLarge = false }: { collapseUntilLarge?: b
 
       {/* Mobile hamburger button */}
       <button
-        className={`${mobileClass} fixed top-4 left-4 z-40 flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card shadow-md text-foreground`}
+        className={`${mobileClass} fixed top-4 left-4 z-40 flex h-10 items-center gap-2 rounded-xl border border-border bg-card px-3 shadow-md text-foreground`}
         onClick={() => setMobileOpen(true)}
-        aria-label="Abrir menu"
+        aria-label={`Abrir menu — seção atual: ${currentLabel}`}
       >
         <Menu className="h-5 w-5" />
+        <span className="text-xs font-semibold">{currentLabel}</span>
       </button>
 
       {/* Mobile overlay + drawer */}
