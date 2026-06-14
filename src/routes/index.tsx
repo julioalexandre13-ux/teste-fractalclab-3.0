@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import {
   HelpCircle, Settings, Plus, Minus, Maximize2, Play, Pause,
   Target, Loader2, Sparkles, Lightbulb, Download, History,
-  X, Flame, Waves, SunMedium, Rainbow, Palette,
+  X, Flame, Waves, SunMedium, Rainbow, Palette, RotateCcw,
 } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
 import { MandelbrotCanvas, type Palette as PaletteType } from "@/components/MandelbrotCanvas";
@@ -29,7 +29,6 @@ const PRESETS: Preset[] = [
   { id: "classic", label: "Clássico", sub: "z² + c", a: { r: 1, i: 0 }, p: 2 },
   { id: "cubic",   label: "Cúbico",   sub: "z³ + c", a: { r: 1, i: 0 }, p: 3 },
   { id: "p4",      label: "Potência 4", sub: "z⁴ + c", a: { r: 1, i: 0 }, p: 4 },
-  { id: "julia",   label: "Julia (fixa c)", sub: "Fixa um c",  a: { r: 0.9, i: 0 }, p: 2 },
 ];
 
 const PALETTES: { id: PaletteType; label: string; icon: React.ReactNode; preview: string[] }[] = [
@@ -51,20 +50,40 @@ type HistoryEntry = {
   timestamp: number;
 };
 
+type SavedLabState = Omit<HistoryEntry, "id" | "timestamp"> & {
+  juliaPoint: { x: number; y: number } | null;
+};
+
+const DEFAULT_STATE: SavedLabState = {
+  preset: "classic", a: { r: 1, i: 0 }, p: 2, iterations: 50,
+  view: { cx: -0.5, cy: 0, scale: 4 / 600 }, palette: "default", juliaPoint: null,
+};
+
+function readLabState(): SavedLabState {
+  if (typeof window === "undefined") return DEFAULT_STATE;
+  try {
+    return { ...DEFAULT_STATE, ...JSON.parse(localStorage.getItem("fractalclab_lab_state") ?? "{}") };
+  } catch { return DEFAULT_STATE; }
+}
+
 // ---------------------------------------------------------------------------
 
 function PlanoComplexo() {
-  const [preset, setPreset]         = useState("classic");
-  const [a, setA]                   = useState({ r: 1, i: 0 });
-  const [p, setP]                   = useState(2);
-  const [iterations, setIterations] = useState(50);
-  const [view, setView]             = useState({ cx: -0.5, cy: 0, scale: 4 / 600 });
+  const initial = useRef(readLabState()).current;
+  const [preset, setPreset]         = useState(initial.preset);
+  const [a, setA]                   = useState(initial.a);
+  const [p, setP]                   = useState(initial.p);
+  const [iterations, setIterations] = useState(initial.iterations);
+  const [view, setView]             = useState(initial.view);
   const [animating, setAnimating]   = useState(false);
-  const [palette, setPalette]       = useState<PaletteType>("default");
-  const [juliaPoint, setJuliaPoint] = useState<{ x: number; y: number } | null>(null);
+  const [palette, setPalette]       = useState<PaletteType>(initial.palette);
+  const [juliaPoint, setJuliaPoint] = useState<{ x: number; y: number } | null>(initial.juliaPoint);
+  const [juliaReal, setJuliaReal]   = useState(initial.juliaPoint?.x.toString() ?? "-0.7");
+  const [juliaImag, setJuliaImag]   = useState(initial.juliaPoint?.y.toString() ?? "0.27015");
   const [juliaClickMode, setJuliaClickMode] = useState(false);
   const [tourOpen, setTourOpen]     = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [saveOpen, setSaveOpen] = useState(false);
   const [history, setHistory]       = useState<HistoryEntry[]>(() => {
     try {
       return JSON.parse(localStorage.getItem("fractalclab_history") ?? "[]");
@@ -72,8 +91,13 @@ function PlanoComplexo() {
   });
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const juliaCanvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef    = useRef<number | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    localStorage.setItem("fractalclab_lab_state", JSON.stringify({ preset, a, p, iterations, view, palette, juliaPoint }));
+  }, [preset, a, p, iterations, view, palette, juliaPoint]);
 
   // Save history entry after parameter changes (debounced)
   useEffect(() => {
@@ -115,6 +139,8 @@ function PlanoComplexo() {
     setPreset(id);
     setA(found.a);
     setP(found.p);
+    setJuliaPoint(null);
+    setJuliaClickMode(false);
   }
 
   function zoom(factor: number) {
@@ -125,13 +151,29 @@ function PlanoComplexo() {
     setView({ cx: -0.5, cy: 0, scale: 4 / 600 });
   }
 
-  function saveImage() {
-    const canvas = canvasRef.current;
+  function downloadCanvas(canvas: HTMLCanvasElement | null, name: string) {
     if (!canvas) return;
     const link = document.createElement("a");
-    link.download = `fractalclab-p${p}-iter${iterations}-${Date.now()}.png`;
+    link.download = `fractalclab-${name}-p${p}-iter${iterations}-${Date.now()}.png`;
     link.href = canvas.toDataURL("image/png");
     link.click();
+  }
+
+  function saveImage() {
+    if (juliaPoint) setSaveOpen(true);
+    else downloadCanvas(canvasRef.current, "mandelbrot");
+  }
+
+  function resetAll() {
+    setPreset(DEFAULT_STATE.preset); setA(DEFAULT_STATE.a); setP(DEFAULT_STATE.p);
+    setIterations(DEFAULT_STATE.iterations); setView(DEFAULT_STATE.view);
+    setPalette(DEFAULT_STATE.palette); setJuliaPoint(null); setJuliaClickMode(false); setAnimating(false);
+  }
+
+  function openTypedJulia() {
+    const x = Number(juliaReal.replace(",", "."));
+    const y = Number(juliaImag.replace(",", "."));
+    if (Number.isFinite(x) && Number.isFinite(y)) setJuliaPoint({ x, y });
   }
 
   const handleCanvasClick = useCallback((re: number, im: number) => {
