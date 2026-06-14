@@ -8,14 +8,14 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
   const items = [
     {
       to: "/",
-      label: "Plano Complexo",
+      label: "Fractais Algébricos",
       sub: "(Mandelbrot)",
       icon: Compass,
       active: pathname === "/",
     },
     {
       to: "/geometria",
-      label: "Geometria Básica",
+      label: "Fractais Geométricos",
       sub: "(Cantor, Koch, Sierpinski)",
       icon: Triangle,
       active: pathname.startsWith("/geometria"),
@@ -48,11 +48,10 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
                 key={it.to}
                 to={it.to}
                 onClick={onClose}
-                className={`flex items-start gap-3 rounded-xl px-3 py-3 transition-colors ${
-                  it.active
-                    ? "bg-accent border border-primary/20 text-primary"
-                    : "hover:bg-secondary text-foreground"
-                }`}
+                className={`flex items-start gap-3 rounded-xl px-3 py-3 transition-colors ${it.active
+                  ? "bg-accent border border-primary/20 text-primary"
+                  : "hover:bg-secondary text-foreground"
+                  }`}
               >
                 <Icon className={`mt-0.5 h-5 w-5 ${it.active ? "text-primary" : "text-muted-foreground"}`} />
                 <div className="leading-tight">

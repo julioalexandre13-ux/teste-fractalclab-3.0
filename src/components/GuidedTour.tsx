@@ -62,7 +62,7 @@ const TOUR_STEPS: TourStep[] = [
     emoji: "📐",
     title: "Fractais Geométricos",
     description:
-      "Na aba 'Geometria Básica' você encontra os fractais clássicos: Conjunto de Cantor, Curva de Koch e Triângulo de Sierpinski — cada um com sua dimensão fractal exibida!",
+      "Na aba 'Fractais Geométricos' você encontra os fractais clássicos: Conjunto de Cantor, Curva de Koch e Triângulo de Sierpinski — cada um com sua dimensão fractal exibida!",
     tip: "A dimensão fractal (Hausdorff) é um número não-inteiro que mede a 'complexidade' de um fractal.",
   },
   {
@@ -160,9 +160,8 @@ export function GuidedTour({ open, onClose }: GuidedTourProps) {
             <button
               key={i}
               onClick={() => setStep(i)}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
-                i === step ? "w-6 bg-primary" : "w-1.5 bg-border hover:bg-muted-foreground"
-              }`}
+              className={`h-1.5 rounded-full transition-all duration-300 ${i === step ? "w-6 bg-primary" : "w-1.5 bg-border hover:bg-muted-foreground"
+                }`}
             />
           ))}
         </div>
