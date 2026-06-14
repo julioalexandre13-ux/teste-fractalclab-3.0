@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState, useCallback } from "react";
 import {
-  HelpCircle, Settings, Plus, Minus, Maximize2, Play, Pause,
+  HelpCircle, Plus, Minus, Maximize2, Play, Pause,
   Target, Loader2, Sparkles, Lightbulb, Download, History,
   X, Flame, Waves, SunMedium, Rainbow, Palette, RotateCcw,
 } from "lucide-react";

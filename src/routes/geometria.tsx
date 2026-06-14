@@ -204,7 +204,8 @@ function SierpinskiCanvas({ iterations, color }: { iterations: number; color: st
 
 function Geometria() {
   const saved = typeof window === "undefined" ? null : localStorage.getItem("fractalclab_geometry_state");
-  const initial = saved ? JSON.parse(saved) as { tab: Tab; cantorIter: number; kochIter: number; sierIter: number } : null;
+  let initial: { tab: Tab; cantorIter: number; kochIter: number; sierIter: number } | null = null;
+  try { initial = saved ? JSON.parse(saved) : null; } catch { initial = null; }
   const [tab, setTab] = useState<Tab>(initial?.tab ?? "cantor");
   const [cantorIter, setCantorIter] = useState(initial?.cantorIter ?? 5);
   const [kochIter, setKochIter] = useState(initial?.kochIter ?? 4);
