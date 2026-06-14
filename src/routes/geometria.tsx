@@ -18,6 +18,22 @@ export const Route = createFileRoute("/geometria")({
 
 type Tab = "cantor" | "koch" | "sierpinski";
 
+function useCanvasWidth(canvasRef: React.RefObject<HTMLCanvasElement | null>) {
+  const [width, setWidth] = useState(0);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const updateWidth = () => setWidth(Math.round(canvas.getBoundingClientRect().width));
+    updateWidth();
+    const observer = new ResizeObserver(updateWidth);
+    observer.observe(canvas);
+    return () => observer.disconnect();
+  }, [canvasRef]);
+
+  return width;
+}
+
 // Math facts for each fractal
 const FRACTAL_INFO = {
   cantor: {
@@ -46,6 +62,7 @@ const FRACTAL_INFO = {
 
 function CantorCanvas({ iterations, color }: { iterations: number; color: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const responsiveWidth = useCanvasWidth(canvasRef);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -53,20 +70,23 @@ function CantorCanvas({ iterations, color }: { iterations: number; color: string
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const W = canvas.offsetWidth || 600;
+    const W = responsiveWidth || canvas.offsetWidth || 600;
     const H = 220;
     canvas.width = W;
     canvas.height = H;
     ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = color;
     let segments: [number, number][] = [[0, 1]];
-    for (let level = 0; level < iterations; level++) {
+    const levels = iterations + 1;
+    const rowGap = Math.min(27, (H - 28) / levels);
+    for (let level = 0; level < levels; level++) {
+      const y = 14 + level * rowGap;
+      for (const [x, w] of segments) {
+        ctx.fillRect(24 + x * (W - 48), y, Math.max(2, w * (W - 48)), 7);
+      }
       segments = segments.flatMap(([x, w]) => [[x, w / 3], [x + (2 * w) / 3, w / 3]] as [number, number][]);
     }
-    ctx.fillStyle = color;
-    for (const [x, w] of segments) {
-      ctx.fillRect(24 + x * (W - 48), H / 2 - 5, Math.max(1, w * (W - 48)), 10);
-    }
-  }, [iterations, color]);
+  }, [iterations, color, responsiveWidth]);
 
   return (
     <canvas
@@ -79,6 +99,7 @@ function CantorCanvas({ iterations, color }: { iterations: number; color: string
 
 function KochCanvas({ iterations, color }: { iterations: number; color: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const responsiveWidth = useCanvasWidth(canvasRef);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -86,7 +107,7 @@ function KochCanvas({ iterations, color }: { iterations: number; color: string }
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const W = canvas.offsetWidth || 600;
+    const W = responsiveWidth || canvas.offsetWidth || 600;
     const H = 260;
     canvas.width = W;
     canvas.height = H;
@@ -129,7 +150,7 @@ function KochCanvas({ iterations, color }: { iterations: number; color: string }
       else ctx.lineTo(x, y);
     }
     ctx.stroke();
-  }, [iterations, color]);
+  }, [iterations, color, responsiveWidth]);
 
   return (
     <canvas
@@ -142,6 +163,7 @@ function KochCanvas({ iterations, color }: { iterations: number; color: string }
 
 function SierpinskiCanvas({ iterations, color }: { iterations: number; color: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const responsiveWidth = useCanvasWidth(canvasRef);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -149,7 +171,7 @@ function SierpinskiCanvas({ iterations, color }: { iterations: number; color: st
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const W = canvas.offsetWidth || 600;
+    const W = responsiveWidth || canvas.offsetWidth || 600;
     const H = 300;
     canvas.width = W;
     canvas.height = H;
@@ -187,7 +209,7 @@ function SierpinskiCanvas({ iterations, color }: { iterations: number; color: st
     const h = size * (Math.sqrt(3) / 2);
     ctx.fillStyle = color;
     drawSierpinski(iterations, startX + size / 2, startY, startX + size, startY + h, startX, startY + h);
-  }, [iterations, color]);
+  }, [iterations, color, responsiveWidth]);
 
   return (
     <canvas
@@ -196,6 +218,54 @@ function SierpinskiCanvas({ iterations, color }: { iterations: number; color: st
       style={{ minHeight: 120 }}
     />
   );
+}
+
+function ResponsiveFractal({ type, iterations, color }: { type: Tab; iterations: number; color: string }) {
+  if (type === "cantor") {
+    let segments: [number, number][] = [[0, 100]];
+    const rows: React.ReactNode[] = [];
+    for (let level = 0; level <= iterations; level++) {
+      rows.push(...segments.map(([x, width], index) => (
+        <rect key={`${level}-${index}`} x={x} y={8 + level * 13} width={Math.max(width, 0.4)} height="4" rx="1" />
+      )));
+      segments = segments.flatMap(([x, width]) => [[x, width / 3], [x + width * 2 / 3, width / 3]] as [number, number][]);
+    }
+    return <svg viewBox="-2 0 104 105" className="h-[220px] w-full p-5" fill={color} preserveAspectRatio="xMidYMid meet">{rows}</svg>;
+  }
+
+  if (type === "koch") {
+    let points: [number, number][] = [[0, 60], [100, 60]];
+    for (let level = 0; level < iterations; level++) {
+      const next: [number, number][] = [];
+      for (let index = 0; index < points.length - 1; index++) {
+        const [x1, y1] = points[index];
+        const [x2, y2] = points[index + 1];
+        const dx = (x2 - x1) / 3;
+        const dy = (y2 - y1) / 3;
+        const ax = x1 + dx, ay = y1 + dy;
+        const bx = x1 + 2 * dx, by = y1 + 2 * dy;
+        next.push([x1, y1], [ax, ay], [ax + (bx - ax) * .5 + (by - ay) * .866, ay + (by - ay) * .5 - (bx - ax) * .866], [bx, by]);
+      }
+      next.push(points[points.length - 1]);
+      points = next;
+    }
+    return <svg viewBox="-3 0 106 75" className="h-[260px] w-full p-4" preserveAspectRatio="xMidYMid meet"><polyline points={points.map(([x, y]) => `${x},${y}`).join(" ")} fill="none" stroke={color} strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" /></svg>;
+  }
+
+  const triangles: string[] = [];
+  const collect = (level: number, a: [number, number], b: [number, number], c: [number, number]) => {
+    if (level === 0) {
+      triangles.push(`${a.join(",")} ${b.join(",")} ${c.join(",")}`);
+      return;
+    }
+    const mid = (p: [number, number], q: [number, number]): [number, number] => [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2];
+    const ab = mid(a, b), bc = mid(b, c), ca = mid(c, a);
+    collect(level - 1, a, ab, ca);
+    collect(level - 1, ab, b, bc);
+    collect(level - 1, ca, bc, c);
+  };
+  collect(iterations, [50, 3], [97, 87], [3, 87]);
+  return <svg viewBox="0 0 100 90" className="h-[300px] w-full p-3" fill={color} preserveAspectRatio="xMidYMid meet">{triangles.map((points, index) => <polygon key={index} points={points} />)}</svg>;
 }
 
 // ---------------------------------------------------------------------------
@@ -217,7 +287,7 @@ function Geometria() {
 
   return (
     <div className="flex min-h-screen bg-background">
-      <Sidebar />
+      <Sidebar collapseUntilLarge />
       <main className="flex-1 overflow-x-hidden">
         <div className="mx-auto max-w-[1400px] px-4 md:px-8 py-8">
           <header className="mb-6 flex items-start justify-between gap-4 pl-14 md:pl-0">
@@ -229,7 +299,7 @@ function Geometria() {
             </div>
           </header>
 
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
+          <div className="grid grid-cols-1 2xl:grid-cols-[minmax(0,1fr)_300px] gap-6">
             <div className="space-y-6">
               {/* Tab selector */}
               <section className="rounded-2xl border border-border bg-card p-4 shadow-sm">
@@ -259,7 +329,7 @@ function Geometria() {
                 curiosity={FRACTAL_INFO.cantor.topFact}
                 mathFact={FRACTAL_INFO.cantor.mathFact}
                 dim={FRACTAL_INFO.cantor.dim}
-                visual={<CantorCanvas iterations={cantorIter} color="oklch(0.55 0.16 150)" />}
+                visual={<ResponsiveFractal type="cantor" iterations={cantorIter} color="oklch(0.55 0.16 150)" />}
                 highlight={tab === "cantor"}
               />}
               {tab === "koch" && <FractalBlock
@@ -274,7 +344,7 @@ function Geometria() {
                 curiosity={FRACTAL_INFO.koch.topFact}
                 mathFact={FRACTAL_INFO.koch.mathFact}
                 dim={FRACTAL_INFO.koch.dim}
-                visual={<KochCanvas iterations={kochIter} color="oklch(0.55 0.18 255)" />}
+                visual={<ResponsiveFractal type="koch" iterations={kochIter} color="oklch(0.55 0.18 255)" />}
                 highlight={tab === "koch"}
               />}
               {tab === "sierpinski" && <FractalBlock
@@ -289,7 +359,7 @@ function Geometria() {
                 curiosity={FRACTAL_INFO.sierpinski.topFact}
                 mathFact={FRACTAL_INFO.sierpinski.mathFact}
                 dim={FRACTAL_INFO.sierpinski.dim}
-                visual={<SierpinskiCanvas iterations={sierIter} color="oklch(0.5 0.2 300)" />}
+                visual={<ResponsiveFractal type="sierpinski" iterations={sierIter} color="oklch(0.5 0.2 300)" />}
                 highlight={tab === "sierpinski"}
               />}
             </div>
@@ -423,7 +493,7 @@ function FractalBlock({
         highlight ? "border-primary/30 ring-1 ring-primary/10" : "border-border"
       }`}
     >
-      <div className="grid grid-cols-1 md:grid-cols-[220px_1fr_200px] gap-5">
+      <div className="grid min-w-0 grid-cols-1 gap-5 lg:grid-cols-[220px_minmax(0,1fr)]">
         {/* Left: controls */}
         <div>
           <h2 className="flex items-center gap-2 text-base font-semibold" style={{ color: colorHex }}>
@@ -456,10 +526,10 @@ function FractalBlock({
         </div>
 
         {/* Center: visualization */}
-        <div className="min-h-[140px] overflow-auto">{visual}</div>
+        <div className="min-w-0 min-h-[220px] overflow-hidden rounded-xl bg-secondary/30">{visual}</div>
 
         {/* Right: info */}
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:col-span-2">
           <div className="rounded-xl p-3" style={{ backgroundColor: softVar }}>
             <div className="text-xs font-semibold" style={{ color: colorHex }}>◐ O que acontece?</div>
             <p className="mt-1 text-xs text-muted-foreground">{what}</p>
