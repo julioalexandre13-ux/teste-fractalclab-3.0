@@ -75,13 +75,16 @@ function CantorCanvas({ iterations, color }: { iterations: number; color: string
     canvas.width = W;
     canvas.height = H;
     ctx.clearRect(0, 0, W, H);
-    let segments: [number, number][] = [[0, 1]];
-    for (let level = 0; level < iterations; level++) {
-      segments = segments.flatMap(([x, w]) => [[x, w / 3], [x + (2 * w) / 3, w / 3]] as [number, number][]);
-    }
     ctx.fillStyle = color;
-    for (const [x, w] of segments) {
-      ctx.fillRect(24 + x * (W - 48), H / 2 - 5, Math.max(1, w * (W - 48)), 10);
+    let segments: [number, number][] = [[0, 1]];
+    const levels = iterations + 1;
+    const rowGap = Math.min(27, (H - 28) / levels);
+    for (let level = 0; level < levels; level++) {
+      const y = 14 + level * rowGap;
+      for (const [x, w] of segments) {
+        ctx.fillRect(24 + x * (W - 48), y, Math.max(2, w * (W - 48)), 7);
+      }
+      segments = segments.flatMap(([x, w]) => [[x, w / 3], [x + (2 * w) / 3, w / 3]] as [number, number][]);
     }
   }, [iterations, color, responsiveWidth]);
 
@@ -236,7 +239,7 @@ function Geometria() {
 
   return (
     <div className="flex min-h-screen bg-background">
-      <Sidebar />
+      <Sidebar collapseUntilLarge />
       <main className="flex-1 overflow-x-hidden">
         <div className="mx-auto max-w-[1400px] px-4 md:px-8 py-8">
           <header className="mb-6 flex items-start justify-between gap-4 pl-14 md:pl-0">
