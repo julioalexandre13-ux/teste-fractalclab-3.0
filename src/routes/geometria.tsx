@@ -18,6 +18,22 @@ export const Route = createFileRoute("/geometria")({
 
 type Tab = "cantor" | "koch" | "sierpinski";
 
+function useCanvasWidth(canvasRef: React.RefObject<HTMLCanvasElement | null>) {
+  const [width, setWidth] = useState(0);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const updateWidth = () => setWidth(Math.round(canvas.getBoundingClientRect().width));
+    updateWidth();
+    const observer = new ResizeObserver(updateWidth);
+    observer.observe(canvas);
+    return () => observer.disconnect();
+  }, [canvasRef]);
+
+  return width;
+}
+
 // Math facts for each fractal
 const FRACTAL_INFO = {
   cantor: {
@@ -46,6 +62,7 @@ const FRACTAL_INFO = {
 
 function CantorCanvas({ iterations, color }: { iterations: number; color: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const responsiveWidth = useCanvasWidth(canvasRef);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -53,7 +70,7 @@ function CantorCanvas({ iterations, color }: { iterations: number; color: string
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const W = canvas.offsetWidth || 600;
+    const W = responsiveWidth || canvas.offsetWidth || 600;
     const H = 220;
     canvas.width = W;
     canvas.height = H;
@@ -66,7 +83,7 @@ function CantorCanvas({ iterations, color }: { iterations: number; color: string
     for (const [x, w] of segments) {
       ctx.fillRect(24 + x * (W - 48), H / 2 - 5, Math.max(1, w * (W - 48)), 10);
     }
-  }, [iterations, color]);
+  }, [iterations, color, responsiveWidth]);
 
   return (
     <canvas
@@ -79,6 +96,7 @@ function CantorCanvas({ iterations, color }: { iterations: number; color: string
 
 function KochCanvas({ iterations, color }: { iterations: number; color: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const responsiveWidth = useCanvasWidth(canvasRef);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -86,7 +104,7 @@ function KochCanvas({ iterations, color }: { iterations: number; color: string }
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const W = canvas.offsetWidth || 600;
+    const W = responsiveWidth || canvas.offsetWidth || 600;
     const H = 260;
     canvas.width = W;
     canvas.height = H;
@@ -129,7 +147,7 @@ function KochCanvas({ iterations, color }: { iterations: number; color: string }
       else ctx.lineTo(x, y);
     }
     ctx.stroke();
-  }, [iterations, color]);
+  }, [iterations, color, responsiveWidth]);
 
   return (
     <canvas
@@ -142,6 +160,7 @@ function KochCanvas({ iterations, color }: { iterations: number; color: string }
 
 function SierpinskiCanvas({ iterations, color }: { iterations: number; color: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const responsiveWidth = useCanvasWidth(canvasRef);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -149,7 +168,7 @@ function SierpinskiCanvas({ iterations, color }: { iterations: number; color: st
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const W = canvas.offsetWidth || 600;
+    const W = responsiveWidth || canvas.offsetWidth || 600;
     const H = 300;
     canvas.width = W;
     canvas.height = H;
@@ -187,7 +206,7 @@ function SierpinskiCanvas({ iterations, color }: { iterations: number; color: st
     const h = size * (Math.sqrt(3) / 2);
     ctx.fillStyle = color;
     drawSierpinski(iterations, startX + size / 2, startY, startX + size, startY + h, startX, startY + h);
-  }, [iterations, color]);
+  }, [iterations, color, responsiveWidth]);
 
   return (
     <canvas
