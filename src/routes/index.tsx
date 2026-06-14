@@ -357,26 +357,32 @@ function PlanoComplexo() {
                     <Target className="h-3.5 w-3.5" />
                     {juliaClickMode ? "Cancelar seleção" : "Ver Julia (clique no fractal)"}
                   </button>
-                  <div className="flex items-center gap-1.5 rounded-xl border border-border bg-card p-1">
-                    <span className="pl-1 text-[11px] text-muted-foreground">c =</span>
-                    <input
-                      aria-label="Parte real de c"
-                      value={juliaReal}
-                      onChange={(e) => setJuliaReal(e.target.value)}
-                      className="w-20 rounded-lg border border-input bg-background px-2 py-1 text-xs"
-                      inputMode="decimal"
-                      placeholder="real"
-                    />
-                    <input
-                      aria-label="Parte imaginária de c"
-                      value={juliaImag}
-                      onChange={(e) => setJuliaImag(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && openTypedJulia()}
-                      className="w-20 rounded-lg border border-input bg-background px-2 py-1 text-xs"
-                      inputMode="decimal"
-                      placeholder="imag."
-                    />
-                    <button onClick={openTypedJulia} className="rounded-lg bg-primary px-2 py-1 text-xs font-medium text-primary-foreground">Abrir</button>
+                  <div className="flex flex-col gap-1.5 rounded-xl border border-border bg-card p-2">
+                    <span className="px-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      c — Ponto do Conjunto de Julia
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="pl-1 text-[11px] font-medium text-muted-foreground">Re:</span>
+                      <input
+                        aria-label="Parte real de c"
+                        value={juliaReal}
+                        onChange={(e) => setJuliaReal(e.target.value)}
+                        className="w-20 rounded-lg border border-input bg-background px-2 py-1 text-xs"
+                        inputMode="decimal"
+                        placeholder="ex: −0.7"
+                      />
+                      <span className="text-[11px] font-medium text-muted-foreground">Im:</span>
+                      <input
+                        aria-label="Parte imaginária de c"
+                        value={juliaImag}
+                        onChange={(e) => setJuliaImag(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && openTypedJulia()}
+                        className="w-20 rounded-lg border border-input bg-background px-2 py-1 text-xs"
+                        inputMode="decimal"
+                        placeholder="ex: 0.27"
+                      />
+                      <button onClick={openTypedJulia} className="rounded-lg bg-primary px-2 py-1 text-xs font-medium text-primary-foreground">Abrir</button>
+                    </div>
                   </div>
                   <button
                     onClick={saveImage}

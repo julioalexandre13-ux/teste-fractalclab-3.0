@@ -34,7 +34,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
           </svg>
           <div className="leading-tight">
             <div className="text-[17px] font-semibold tracking-tight text-foreground">
-              Fractal<span className="text-primary">C</span>Lab
+              Fractal<span className="text-primary" title="ℂ — conjunto dos números complexos">ℂ</span>Lab
             </div>
             <div className="text-xs text-muted-foreground">Laboratório Experimental</div>
           </div>
