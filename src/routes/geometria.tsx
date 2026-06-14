@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import {
-  HelpCircle, Settings, Lightbulb, Sparkles, RefreshCw, Star,
+  Lightbulb, Sparkles, RefreshCw, Star,
   Circle as CircleIcon, Settings2,
 } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
@@ -54,48 +54,25 @@ function CantorCanvas({ iterations, color }: { iterations: number; color: string
     if (!ctx) return;
 
     const W = canvas.offsetWidth || 600;
-    const H = Math.max(30 * (iterations + 1), 60);
+    const H = 220;
     canvas.width = W;
     canvas.height = H;
     ctx.clearRect(0, 0, W, H);
-
-    const rowH = H / (iterations + 1);
-
-    function drawLevel(level: number, segs: [number, number][]) {
-      const y = level * rowH + rowH / 2;
-
-      // Label
-      ctx!.fillStyle = color + "99";
-      ctx!.font = "10px monospace";
-      ctx!.fillText(String(level), 2, y + 4);
-
-      // Segments
-      ctx!.fillStyle = color;
-      for (const [x, w] of segs) {
-        const px = 24 + x * (W - 30);
-        const pw = w * (W - 30);
-        ctx!.fillRect(px, y - 3, Math.max(1, pw), 6);
-      }
-
-      if (level < iterations) {
-        const next: [number, number][] = [];
-        for (const [x, w] of segs) {
-          const t = w / 3;
-          next.push([x, t]);
-          next.push([x + 2 * t, t]);
-        }
-        drawLevel(level + 1, next);
-      }
+    let segments: [number, number][] = [[0, 1]];
+    for (let level = 0; level < iterations; level++) {
+      segments = segments.flatMap(([x, w]) => [[x, w / 3], [x + (2 * w) / 3, w / 3]] as [number, number][]);
     }
-
-    drawLevel(0, [[0, 1]]);
+    ctx.fillStyle = color;
+    for (const [x, w] of segments) {
+      ctx.fillRect(24 + x * (W - 48), H / 2 - 5, Math.max(1, w * (W - 48)), 10);
+    }
   }, [iterations, color]);
 
   return (
     <canvas
       ref={canvasRef}
       className="w-full rounded-lg"
-      style={{ minHeight: Math.max(60, 30 * (iterations + 1)) }}
+      style={{ minHeight: 220 }}
     />
   );
 }
