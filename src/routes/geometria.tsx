@@ -220,6 +220,54 @@ function SierpinskiCanvas({ iterations, color }: { iterations: number; color: st
   );
 }
 
+function ResponsiveFractal({ type, iterations, color }: { type: Tab; iterations: number; color: string }) {
+  if (type === "cantor") {
+    let segments: [number, number][] = [[0, 100]];
+    const rows: React.ReactNode[] = [];
+    for (let level = 0; level <= iterations; level++) {
+      rows.push(...segments.map(([x, width], index) => (
+        <rect key={`${level}-${index}`} x={x} y={8 + level * 13} width={Math.max(width, 0.4)} height="4" rx="1" />
+      )));
+      segments = segments.flatMap(([x, width]) => [[x, width / 3], [x + width * 2 / 3, width / 3]] as [number, number][]);
+    }
+    return <svg viewBox="-2 0 104 105" className="h-[220px] w-full p-5" fill={color} preserveAspectRatio="xMidYMid meet">{rows}</svg>;
+  }
+
+  if (type === "koch") {
+    let points: [number, number][] = [[0, 60], [100, 60]];
+    for (let level = 0; level < iterations; level++) {
+      const next: [number, number][] = [];
+      for (let index = 0; index < points.length - 1; index++) {
+        const [x1, y1] = points[index];
+        const [x2, y2] = points[index + 1];
+        const dx = (x2 - x1) / 3;
+        const dy = (y2 - y1) / 3;
+        const ax = x1 + dx, ay = y1 + dy;
+        const bx = x1 + 2 * dx, by = y1 + 2 * dy;
+        next.push([x1, y1], [ax, ay], [ax + (bx - ax) * .5 + (by - ay) * .866, ay + (by - ay) * .5 - (bx - ax) * .866], [bx, by]);
+      }
+      next.push(points[points.length - 1]);
+      points = next;
+    }
+    return <svg viewBox="-3 0 106 75" className="h-[260px] w-full p-4" preserveAspectRatio="xMidYMid meet"><polyline points={points.map(([x, y]) => `${x},${y}`).join(" ")} fill="none" stroke={color} strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" /></svg>;
+  }
+
+  const triangles: string[] = [];
+  const collect = (level: number, a: [number, number], b: [number, number], c: [number, number]) => {
+    if (level === 0) {
+      triangles.push(`${a.join(",")} ${b.join(",")} ${c.join(",")}`);
+      return;
+    }
+    const mid = (p: [number, number], q: [number, number]): [number, number] => [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2];
+    const ab = mid(a, b), bc = mid(b, c), ca = mid(c, a);
+    collect(level - 1, a, ab, ca);
+    collect(level - 1, ab, b, bc);
+    collect(level - 1, ca, bc, c);
+  };
+  collect(iterations, [50, 3], [97, 87], [3, 87]);
+  return <svg viewBox="0 0 100 90" className="h-[300px] w-full p-3" fill={color} preserveAspectRatio="xMidYMid meet">{triangles.map((points, index) => <polygon key={index} points={points} />)}</svg>;
+}
+
 // ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
