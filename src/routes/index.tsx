@@ -248,7 +248,7 @@ function PlanoComplexo() {
           {/* Header */}
           <header className="mb-6 flex flex-col md:flex-row md:items-start justify-between gap-5 pt-16 md:pt-0">
             <div className="flex-1 w-full px-2 md:px-0">
-              <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-foreground">Laboratório de Fractais</h1>
+              <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-foreground">Fractais Algébricos</h1>
               <p className="mt-2 text-base md:text-sm text-muted-foreground">
                 Altere os parâmetros, observe o fractal e descubra padrões incríveis!
               </p>
