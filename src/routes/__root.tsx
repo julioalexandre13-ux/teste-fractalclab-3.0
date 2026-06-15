@@ -77,14 +77,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
+      { title: "FractalCLab" },
+      { name: "description", content: "FractalCLab é uma aplicação web para explorar fractais gerador por número complexos." },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { property: "og:title", content: "FractalCLab" },
+      { property: "og:description", content: "FractalCLab é uma aplicação web para explorar fractais gerador por número complexos." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "FractalCLab" },
+      { name: "twitter:description", content: "FractalCLab é uma aplicação web para explorar fractais gerador por número complexos." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/368c4d5a-4418-427d-968b-50256d34a525/id-preview-3c6e13e3--7a6c623d-01a7-4105-b576-68929528699d.lovable.app-1781497959403.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/368c4d5a-4418-427d-968b-50256d34a525/id-preview-3c6e13e3--7a6c623d-01a7-4105-b576-68929528699d.lovable.app-1781497959403.png" },
     ],
     links: [
       {
