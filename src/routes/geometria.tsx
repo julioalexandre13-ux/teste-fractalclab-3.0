@@ -2,9 +2,42 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import {
   Lightbulb, Sparkles, RefreshCw, Star,
-  Circle as CircleIcon, Settings2, Play, Pause, ChevronLeft, ChevronRight, RotateCcw,
+  Circle as CircleIcon, Settings2, Play, Pause, ChevronLeft, ChevronRight, RotateCcw, HelpCircle,
 } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
+import { GuidedTour, type TourStep } from "@/components/GuidedTour";
+
+const GEOMETRIA_TOUR: TourStep[] = [
+  {
+    emoji: "📐",
+    title: "Fractais geométricos clássicos",
+    description:
+      "Aqui você explora três fractais construídos por regras geométricas simples e repetitivas: Cantor, Koch e Sierpinski. Cada um nasce de uma figura inicial e uma instrução de substituição.",
+    tip: "Use as abas no topo para alternar entre os três fractais.",
+  },
+  {
+    emoji: "🔢",
+    title: "Iterações",
+    description:
+      "O controle de iterações define quantas vezes a regra é aplicada. Iteração 0 é a figura de partida; cada iteração seguinte aplica a regra a todas as peças atuais.",
+    tip: "Aumente devagar para ver a estrutura aparecer — número alto pode pesar no desenho.",
+  },
+  {
+    emoji: "📏",
+    title: "Dimensão fractal",
+    description:
+      "Cada fractal mostra sua dimensão de Hausdorff — um número que NÃO é inteiro e mede o quanto a figura preenche o espaço. Cantor ≈ 0,63; Koch ≈ 1,26; Sierpinski ≈ 1,58.",
+    tip: "Quanto maior a dimensão, mais o fractal 'preenche' seu plano de fundo.",
+  },
+  {
+    emoji: "🚀",
+    title: "Explore e compare",
+    description:
+      "Compare o ritmo de crescimento de cada fractal: Cantor remove, Koch quebra arestas, Sierpinski perfura triângulos. Mesma ideia, três resultados muito diferentes.",
+    tip: "Volte ao Laboratório para ver fractais escapistas (Mandelbrot/Julia) e compare as duas famílias.",
+  },
+];
+
 
 export const Route = createFileRoute("/geometria")({
   head: () => ({
