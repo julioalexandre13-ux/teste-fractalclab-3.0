@@ -8,14 +8,39 @@ import {
 import { Sidebar } from "@/components/Sidebar";
 import { MandelbrotCanvas, type Palette as PaletteType } from "@/components/MandelbrotCanvas";
 import { GuidedTour } from "@/components/GuidedTour";
+import { Math as TeX } from "@/components/Math";
+
+type HomeSearch = { cRe?: number; cIm?: number; julia?: number };
 
 export const Route = createFileRoute("/")({
+  validateSearch: (search: Record<string, unknown>): HomeSearch => ({
+    cRe: typeof search.cRe === "number" ? search.cRe : undefined,
+    cIm: typeof search.cIm === "number" ? search.cIm : undefined,
+    julia: typeof search.julia === "number" ? search.julia : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "FractalCLab — Laboratório de Fractais" },
       { name: "description", content: "Explore o conjunto de Mandelbrot e descubra padrões matemáticos incríveis." },
       { property: "og:title", content: "FractalCLab — Laboratório de Fractais" },
       { property: "og:description", content: "Ferramenta educacional para explorar fractais no ensino médio." },
+      { property: "og:url", content: "/" },
+      { property: "og:type", content: "website" },
+    ],
+    links: [{ rel: "canonical", href: "/" }],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "LearningResource",
+          name: "FractalCLab — Fractais Algébricos",
+          inLanguage: "pt-BR",
+          learningResourceType: "Interactive simulation",
+          educationalUse: "instruction",
+          about: "Conjunto de Mandelbrot, fractais algébricos, plano complexo",
+        }),
+      },
     ],
   }),
   component: PlanoComplexo,
