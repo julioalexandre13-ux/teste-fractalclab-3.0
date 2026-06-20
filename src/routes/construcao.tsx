@@ -1,12 +1,26 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Play, Pause, RotateCcw, Sparkles, Target, ExternalLink, HelpCircle } from "lucide-react";
+import {
+  Play,
+  Pause,
+  RotateCcw,
+  Sparkles,
+  Target,
+  ExternalLink,
+  HelpCircle,
+  Shuffle,
+  Grid3x3,
+} from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Math as TeX } from "@/components/Math";
 import { GuidedTour, type TourStep } from "@/components/GuidedTour";
-import type { PointsRequest, PointsResponse } from "../workers/mandelbrot-points.worker";
+import type {
+  PointsRequest,
+  PointsResponse,
+  SamplingMode,
+} from "../workers/mandelbrot-points.worker";
 
 const CONSTRUCAO_TOUR: TourStep[] = [
   {
@@ -39,8 +53,6 @@ const CONSTRUCAO_TOUR: TourStep[] = [
   },
 ];
 
-
-
 export const Route = createFileRoute("/construcao")({
   head: () => ({
     meta: [
@@ -51,7 +63,10 @@ export const Route = createFileRoute("/construcao")({
           "Veja o conjunto de Mandelbrot se formar ponto a ponto a partir da recorrência z_{n+1} = z_n² + c.",
       },
       { property: "og:title", content: "Construção do Mandelbrot — FractalCLab" },
-      { property: "og:description", content: "Animação do conjunto de Mandelbrot se formando ponto a ponto." },
+      {
+        property: "og:description",
+        content: "Animação do conjunto de Mandelbrot se formando ponto a ponto.",
+      },
       { property: "og:url", content: "/construcao" },
       { property: "og:type", content: "article" },
     ],
@@ -88,7 +103,6 @@ const X_MAX = 0.7;
 const Y_MIN = -1.25;
 const Y_MAX = 1.25;
 
-
 type OrbitResult = {
   cRe: number;
   cIm: number;
@@ -97,9 +111,7 @@ type OrbitResult = {
 };
 
 function computeOrbit(cRe: number, cIm: number): OrbitResult {
-  const pts: { re: number; im: number; mod: number }[] = [
-    { re: 0, im: 0, mod: 0 },
-  ];
+  const pts: { re: number; im: number; mod: number }[] = [{ re: 0, im: 0, mod: 0 }];
   let zx = 0,
     zy = 0;
   let escapeIteration: number | null = null;
@@ -126,6 +138,8 @@ function ConstrucaoPage() {
   const [count, setCount] = useState(1);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(400); // pontos por frame
+  const [samplingMode, setSamplingMode] = useState<SamplingMode>("random");
+  const [tested, setTested] = useState(0);
   const rafRef = useRef<number | null>(null);
   const lastDrawnRef = useRef(0);
 
@@ -161,7 +175,6 @@ function ConstrucaoPage() {
   const [tourOpen, setTourOpen] = useState(false);
 
   useEffect(() => {
-
     if (!animatingOrbit || !orbit) return;
     if (orbitVisible >= orbit.points.length) {
       setAnimatingOrbit(false);
@@ -175,19 +188,23 @@ function ConstrucaoPage() {
     };
   }, [animatingOrbit, orbitVisible, orbit]);
 
-
-
-  // Gera os pontos uma única vez em um Web Worker (não bloqueia a UI).
+  // Gera os pontos em um Web Worker (não bloqueia a UI).
+  // Reexecuta sempre que o modo de amostragem muda.
   useEffect(() => {
     let cancelled = false;
-    const worker = new Worker(
-      new URL("../workers/mandelbrot-points.worker.ts", import.meta.url),
-      { type: "module" },
-    );
+    setPoints(null);
+    setCount(1);
+    setPlaying(false);
+    lastDrawnRef.current = 0;
+
+    const worker = new Worker(new URL("../workers/mandelbrot-points.worker.ts", import.meta.url), {
+      type: "module",
+    });
     worker.onmessage = (e: MessageEvent<PointsResponse>) => {
       if (cancelled) return;
-      const { buffer, count } = e.data;
-      setPoints(new Float32Array(buffer, 0, count * 2));
+      const { buffer, count: c, tested: t } = e.data;
+      setPoints(new Float32Array(buffer, 0, c * 2));
+      setTested(t);
     };
     const req: PointsRequest = {
       target: TOTAL_POINTS,
@@ -196,14 +213,14 @@ function ConstrucaoPage() {
       xMax: X_MAX,
       yMin: Y_MIN,
       yMax: Y_MAX,
+      mode: samplingMode,
     };
     worker.postMessage(req);
     return () => {
       cancelled = true;
       worker.terminate();
     };
-  }, []);
-
+  }, [samplingMode]);
 
   const total = points ? points.length / 2 : 0;
 
@@ -286,13 +303,22 @@ function ConstrucaoPage() {
   const pct = total > 0 ? Math.round((count / total) * 100) : 0;
 
   const milestone = useMemo(() => {
+    if (samplingMode === "grid") {
+      if (count < total * 0.05)
+        return "Varredura iniciando pelo topo da grade — ainda poucos pontos aceitos.";
+      if (count < total * 0.3)
+        return "As primeiras linhas da grade já revelam o topo da cardióide.";
+      if (count < total * 0.7) return "A varredura está passando pelo centro da figura.";
+      if (count < total) return "Últimas linhas da grade, perto da base do conjunto.";
+      return "Varredura completa! Cada ponto do plano foi testado, linha a linha.";
+    }
     if (count < 50) return "Apenas alguns pontos — ainda não dá para ver nada.";
     if (count < 500) return "Começa a aparecer uma nuvem dispersa de pontos.";
     if (count < 3000) return "A cardióide central está se formando.";
     if (count < 10000) return "O bulbo à esquerda e os 'satélites' aparecem.";
     if (count < total) return "Os filamentos finos vão preenchendo a borda.";
     return "Pronto! O conjunto de Mandelbrot está formado.";
-  }, [count, total]);
+  }, [count, total, samplingMode]);
 
   return (
     <div className="flex h-dvh bg-background text-foreground">
@@ -309,12 +335,10 @@ function ConstrucaoPage() {
                 O Mandelbrot, ponto a ponto
               </h1>
               <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-                Cada ponto plotado é um número complexo <em>c</em> tal que a
-                recorrência{" "}
+                Cada ponto plotado é um número complexo <em>c</em> tal que a recorrência{" "}
                 <TeX tex="z_0 = 0,\ z_{n+1} = z_n^{2} + c" className="mx-1" />{" "}
-                <strong>não escapa</strong> ao infinito. Use o controle abaixo
-                para ver como a famosa silhueta vai surgindo de poucos pontos
-                até a imagem completa.
+                <strong>não escapa</strong> ao infinito. Use o controle abaixo para ver como a
+                famosa silhueta vai surgindo de poucos pontos até a imagem completa.
               </p>
             </div>
             <button
@@ -327,7 +351,6 @@ function ConstrucaoPage() {
               <span className="hidden sm:inline">Tour</span>
             </button>
           </header>
-
 
           <section className="rounded-2xl border border-border bg-card p-4 md:p-5">
             <div
@@ -345,6 +368,11 @@ function ConstrucaoPage() {
               )}
               <div className="pointer-events-none absolute left-2 top-2 rounded-md bg-black/60 px-2 py-1 font-mono text-[10px] text-white/80 backdrop-blur-sm">
                 {count.toLocaleString("pt-BR")} / {total.toLocaleString("pt-BR")} pontos · {pct}%
+                {tested > 0 && (
+                  <span className="ml-2 text-white/50">
+                    ({tested.toLocaleString("pt-BR")} candidatos testados)
+                  </span>
+                )}
               </div>
               {orbit &&
                 orbit.cRe >= X_MIN &&
@@ -367,11 +395,55 @@ function ConstrucaoPage() {
                     </div>
                   </div>
                 )}
-
             </div>
 
             {/* Controles */}
             <div className="mt-5 space-y-4">
+              <div>
+                <div className="mb-1.5 flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Modo de geração</span>
+                </div>
+                <div
+                  className="grid grid-cols-2 gap-2"
+                  role="radiogroup"
+                  aria-label="Modo de geração dos pontos"
+                >
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={samplingMode === "random"}
+                    onClick={() => setSamplingMode("random")}
+                    className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
+                      samplingMode === "random"
+                        ? "border-primary/40 bg-accent text-primary"
+                        : "border-border bg-card text-muted-foreground hover:bg-secondary"
+                    }`}
+                  >
+                    <Shuffle className="h-3.5 w-3.5" />
+                    Aleatório
+                  </button>
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={samplingMode === "grid"}
+                    onClick={() => setSamplingMode("grid")}
+                    className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
+                      samplingMode === "grid"
+                        ? "border-primary/40 bg-accent text-primary"
+                        : "border-border bg-card text-muted-foreground hover:bg-secondary"
+                    }`}
+                  >
+                    <Grid3x3 className="h-3.5 w-3.5" />
+                    Varredura
+                  </button>
+                </div>
+                <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
+                  {samplingMode === "random"
+                    ? "Sorteia candidatos por toda a região: a figura emerge como uma nuvem que ganha densidade."
+                    : 'Testa sequencialmente cada ponto de uma grade regular, linha a linha — a mesma ideia de "varrer todo o plano" usada na imagem principal do Mandelbrot.'}
+                </p>
+              </div>
+
               <div>
                 <div className="mb-1 flex items-center justify-between text-xs text-muted-foreground">
                   <span>Pontos visíveis</span>
@@ -447,8 +519,7 @@ function ConstrucaoPage() {
               </div>
 
               <div className="rounded-xl border border-border bg-secondary/50 px-3 py-2 text-xs text-muted-foreground">
-                <strong className="text-foreground">O que está acontecendo:</strong>{" "}
-                {milestone}
+                <strong className="text-foreground">O que está acontecendo:</strong> {milestone}
               </div>
             </div>
           </section>
@@ -463,10 +534,8 @@ function ConstrucaoPage() {
               Esse <em>c</em> pertence ao conjunto?
             </h2>
             <p className="mt-1 max-w-2xl text-xs text-muted-foreground">
-              Digite as partes real e imaginária de <em>c</em>. Calculamos
-              iteração por iteração até {MAX_ITER} passos, com{" "}
-              <TeX tex="z_0 = 0" /> e{" "}
-              <TeX tex="z_{n+1} = z_n^{2} + c" />.
+              Digite as partes real e imaginária de <em>c</em>. Calculamos iteração por iteração até{" "}
+              {MAX_ITER} passos, com <TeX tex="z_0 = 0" /> e <TeX tex="z_{n+1} = z_n^{2} + c" />.
             </p>
 
             <div className="mt-4 grid gap-3 md:grid-cols-[1fr_1fr_auto]">
@@ -522,38 +591,53 @@ function ConstrucaoPage() {
           </section>
 
           <section className="mt-6 grid gap-4 md:grid-cols-2">
-
             <Info
               title="Como cada ponto é decidido"
               body={
                 <>
-                  Para cada candidato <em>c</em>, iteramos{" "}
-                  <TeX tex="z_{n+1} = z_n^{2} + c" />{" "}
-                  com <TeX tex="z_0 = 0" />. Se após {MAX_ITER} iterações o módulo
-                  permanece ≤ 2, consideramos que <em>c</em> pertence ao
-                  conjunto e o desenhamos.
+                  Para cada candidato <em>c</em>, iteramos <TeX tex="z_{n+1} = z_n^{2} + c" /> com{" "}
+                  <TeX tex="z_0 = 0" />. Se após {MAX_ITER} iterações o módulo permanece ≤ 2,
+                  consideramos que <em>c</em> pertence ao conjunto e o desenhamos.
                 </>
               }
             />
             <Info
-              title="Por que aparece em ordem 'aleatória'"
+              title={
+                samplingMode === "grid"
+                  ? "Por que aparece 'linha a linha'"
+                  : "Por que aparece em ordem 'aleatória'"
+              }
               body={
-                <>
-                  Os candidatos são sorteados uniformemente no retângulo
-                  visível. Por isso, com poucos pontos, vemos uma nuvem
-                  dispersa; conforme o número cresce, a densidade revela a
-                  forma característica da cardióide e dos bulbos.
-                </>
+                samplingMode === "grid" ? (
+                  <>
+                    No modo Varredura, percorremos sistematicamente uma grade regular de candidatos,
+                    do topo para a base, esquerda para a direita — a mesma lógica usada para gerar a
+                    imagem completa do Mandelbrot na aba principal, pixel a pixel. Nenhum ponto da
+                    grade é pulado.
+                  </>
+                ) : (
+                  <>
+                    Os candidatos são sorteados uniformemente no retângulo visível. Por isso, com
+                    poucos pontos, vemos uma nuvem dispersa; conforme o número cresce, a densidade
+                    revela a forma característica da cardióide e dos bulbos. Esse modo não testa
+                    todos os pontos do plano — é uma amostragem estatística, não uma varredura
+                    exaustiva.
+                  </>
+                )
               }
             />
           </section>
         </div>
       </main>
-      <GuidedTour open={tourOpen} onClose={() => setTourOpen(false)} steps={CONSTRUCAO_TOUR} label="Tour da Construção" />
+      <GuidedTour
+        open={tourOpen}
+        onClose={() => setTourOpen(false)}
+        steps={CONSTRUCAO_TOUR}
+        label="Tour da Construção"
+      />
     </div>
   );
 }
-
 
 function drawAxes(ctx: CanvasRenderingContext2D, W: number, H: number) {
   const sx = W / (X_MAX - X_MIN);
@@ -641,15 +725,14 @@ function OrbitDisplay({
       >
         {belongs ? (
           <>
-            ✅ <strong>c = {cLabel}</strong> pertence ao Conjunto de Mandelbrot
-            (após {MAX_ITER} iterações, |z| permaneceu ≤ 2). |z<sub>{MAX_ITER}</sub>| ={" "}
+            ✅ <strong>c = {cLabel}</strong> pertence ao Conjunto de Mandelbrot (após {MAX_ITER}{" "}
+            iterações, |z| permaneceu ≤ 2). |z<sub>{MAX_ITER}</sub>| ={" "}
             <span className="font-mono">{fmt(points[points.length - 1].mod)}</span>.
           </>
         ) : (
           <>
-            ❌ <strong>c = {cLabel}</strong> NÃO pertence ao Conjunto de
-            Mandelbrot — a órbita escapou na iteração{" "}
-            <strong>{escapeIteration}</strong>, onde |z
+            ❌ <strong>c = {cLabel}</strong> NÃO pertence ao Conjunto de Mandelbrot — a órbita
+            escapou na iteração <strong>{escapeIteration}</strong>, onde |z
             <sub>{escapeIteration}</sub>| ={" "}
             <span className="font-mono">{fmt(points[points.length - 1].mod)}</span>.
           </>
@@ -658,12 +741,7 @@ function OrbitDisplay({
 
       <div className="grid gap-4 md:grid-cols-[auto_1fr]">
         <div className="mx-auto rounded-xl border border-border bg-canvas p-2">
-          <svg
-            width={SVG}
-            height={SVG}
-            viewBox={`0 0 ${SVG} ${SVG}`}
-            className="block max-w-full"
-          >
+          <svg width={SVG} height={SVG} viewBox={`0 0 ${SVG} ${SVG}`} className="block max-w-full">
             {/* eixos */}
             <line x1={0} y1={SVG / 2} x2={SVG} y2={SVG / 2} stroke="rgba(255,255,255,0.18)" />
             <line x1={SVG / 2} y1={0} x2={SVG / 2} y2={SVG} stroke="rgba(255,255,255,0.18)" />
@@ -679,12 +757,7 @@ function OrbitDisplay({
               />
             )}
             {/* poligonal */}
-            <polyline
-              points={polyline}
-              fill="none"
-              stroke="var(--orbit-line)"
-              strokeWidth={1.2}
-            />
+            <polyline points={polyline} fill="none" stroke="var(--orbit-line)" strokeWidth={1.2} />
             {/* pontos */}
             {visible.map((p, i) => {
               const { x, y } = toPx(p.re, p.im);
@@ -693,10 +766,10 @@ function OrbitDisplay({
               const color = isFirst
                 ? "var(--orbit-start)"
                 : isLast
-                ? belongs
-                  ? "var(--orbit-end-in)"
-                  : "var(--orbit-end-out)"
-                : "rgba(255,255,255,0.7)";
+                  ? belongs
+                    ? "var(--orbit-end-in)"
+                    : "var(--orbit-end-out)"
+                  : "rgba(255,255,255,0.7)";
               const r = isFirst || isLast ? 4 : 2;
               return (
                 <circle
@@ -726,19 +799,13 @@ function OrbitDisplay({
           </div>
         </div>
 
-
         <div className="flex flex-col gap-3">
           <div className="rounded-xl border border-border bg-secondary/40 p-3 text-xs text-muted-foreground">
             <div className="mb-1 font-medium text-foreground">Status</div>
             <div>
               Iterações exibidas:{" "}
-              <span className="font-mono text-foreground">
-                {Math.max(0, orbitVisible - 1)}
-              </span>{" "}
-              de{" "}
-              <span className="font-mono">
-                {points.length - 1}
-              </span>
+              <span className="font-mono text-foreground">{Math.max(0, orbitVisible - 1)}</span> de{" "}
+              <span className="font-mono">{points.length - 1}</span>
             </div>
             {last && (
               <div>
@@ -746,25 +813,19 @@ function OrbitDisplay({
                 <span className="font-mono text-foreground">
                   {fmt(last.re)} {last.im >= 0 ? "+" : "−"} {fmt(Math.abs(last.im))}i
                 </span>{" "}
-                · |z| ={" "}
-                <span className="font-mono text-foreground">{fmt(last.mod)}</span>
+                · |z| = <span className="font-mono text-foreground">{fmt(last.mod)}</span>
               </div>
             )}
             {truncated && (
               <div className="mt-1 text-warn">
-                A escala foi limitada para {SCALE_CAP}. Os últimos valores
-                cresceram além da área exibida.
+                A escala foi limitada para {SCALE_CAP}. Os últimos valores cresceram além da área
+                exibida.
               </div>
             )}
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={onAnimate}
-              disabled={animating}
-            >
+            <Button size="sm" variant="secondary" onClick={onAnimate} disabled={animating}>
               <Play className="mr-1 h-4 w-4" />
               {animating ? "Animando…" : "Animar órbita"}
             </Button>
