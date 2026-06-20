@@ -107,6 +107,7 @@ function readLabState(): SavedLabState {
 // ---------------------------------------------------------------------------
 
 function PlanoComplexo() {
+  const search = Route.useSearch();
   const initial = useRef(readLabState()).current;
   const [preset, setPreset] = useState(initial.preset);
   const [a, setA] = useState(initial.a);
