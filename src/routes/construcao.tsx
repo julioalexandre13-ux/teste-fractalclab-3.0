@@ -528,3 +528,200 @@ function Info({ title, body }: { title: string; body: React.ReactNode }) {
     </div>
   );
 }
+
+function OrbitDisplay({
+  orbit,
+  orbitVisible,
+  onAnimate,
+  animating,
+  onShowAll,
+}: {
+  orbit: OrbitResult;
+  orbitVisible: number;
+  onAnimate: () => void;
+  animating: boolean;
+  onShowAll: () => void;
+}) {
+  const { cRe, cIm, points, escapeIteration } = orbit;
+  const belongs = escapeIteration === null;
+  const lastIdx = Math.min(orbitVisible, points.length) - 1;
+  const last = points[Math.max(0, lastIdx)];
+
+  // Escala dinâmica: incluir todos os pontos visíveis (com margem).
+  const visible = points.slice(0, Math.max(1, orbitVisible));
+  let maxAbs = 2.2;
+  for (const p of visible) {
+    maxAbs = Math.max(maxAbs, Math.abs(p.re), Math.abs(p.im));
+  }
+  // Limita escala absurda quando escapa para o infinito.
+  const SCALE_CAP = 50;
+  const truncated = maxAbs > SCALE_CAP;
+  const R = Math.min(maxAbs, SCALE_CAP) * 1.1;
+
+  const SVG = 360;
+  const toPx = (re: number, im: number) => ({
+    x: ((re + R) / (2 * R)) * SVG,
+    y: SVG - ((im + R) / (2 * R)) * SVG,
+  });
+
+  const polyline = visible
+    .map((p) => {
+      const { x, y } = toPx(p.re, p.im);
+      return `${x.toFixed(2)},${y.toFixed(2)}`;
+    })
+    .join(" ");
+
+  const fmt = (n: number) => {
+    if (!Number.isFinite(n)) return "∞";
+    if (Math.abs(n) >= 1000) return n.toExponential(2);
+    return n.toFixed(3);
+  };
+  const cLabel = `${fmt(cRe)} ${cIm >= 0 ? "+" : "−"} ${fmt(Math.abs(cIm))}i`;
+
+  return (
+    <div className="mt-5 space-y-4">
+      <div
+        className={`rounded-xl border px-3 py-2 text-sm ${
+          belongs
+            ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+            : "border-rose-500/30 bg-rose-500/10 text-rose-300"
+        }`}
+      >
+        {belongs ? (
+          <>
+            ✅ <strong>c = {cLabel}</strong> pertence ao Conjunto de Mandelbrot
+            (após {MAX_ITER} iterações, |z| permaneceu ≤ 2). |z<sub>{MAX_ITER}</sub>| ={" "}
+            <span className="font-mono">{fmt(points[points.length - 1].mod)}</span>.
+          </>
+        ) : (
+          <>
+            ❌ <strong>c = {cLabel}</strong> NÃO pertence ao Conjunto de
+            Mandelbrot — a órbita escapou na iteração{" "}
+            <strong>{escapeIteration}</strong>, onde |z
+            <sub>{escapeIteration}</sub>| ={" "}
+            <span className="font-mono">{fmt(points[points.length - 1].mod)}</span>.
+          </>
+        )}
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-[auto_1fr]">
+        <div className="mx-auto rounded-xl border border-border bg-[oklch(0.08_0.02_240)] p-2">
+          <svg
+            width={SVG}
+            height={SVG}
+            viewBox={`0 0 ${SVG} ${SVG}`}
+            className="block max-w-full"
+          >
+            {/* eixos */}
+            <line x1={0} y1={SVG / 2} x2={SVG} y2={SVG / 2} stroke="rgba(255,255,255,0.18)" />
+            <line x1={SVG / 2} y1={0} x2={SVG / 2} y2={SVG} stroke="rgba(255,255,255,0.18)" />
+            {/* círculo |z|=2 de referência */}
+            {2 <= R && (
+              <circle
+                cx={SVG / 2}
+                cy={SVG / 2}
+                r={(2 / R) * (SVG / 2)}
+                fill="none"
+                stroke="rgba(255,255,255,0.18)"
+                strokeDasharray="3 3"
+              />
+            )}
+            {/* poligonal */}
+            <polyline
+              points={polyline}
+              fill="none"
+              stroke="rgba(120,200,255,0.85)"
+              strokeWidth={1.2}
+            />
+            {/* pontos */}
+            {visible.map((p, i) => {
+              const { x, y } = toPx(p.re, p.im);
+              const isFirst = i === 0;
+              const isLast = i === visible.length - 1;
+              const color = isFirst
+                ? "#22c55e"
+                : isLast
+                ? belongs
+                  ? "#22d3ee"
+                  : "#fb7185"
+                : "rgba(255,255,255,0.7)";
+              const r = isFirst || isLast ? 4 : 2;
+              return (
+                <circle
+                  key={i}
+                  cx={x}
+                  cy={y}
+                  r={r}
+                  fill={color}
+                  stroke={isFirst || isLast ? "rgba(0,0,0,0.4)" : "none"}
+                />
+              );
+            })}
+          </svg>
+          <div className="mt-1 flex justify-between px-1 text-[10px] text-muted-foreground">
+            <span>
+              <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 align-middle" />{" "}
+              z₀
+            </span>
+            <span>|z|=2 (círculo tracejado)</span>
+            <span>
+              <span
+                className={`inline-block h-2 w-2 rounded-full align-middle ${
+                  belongs ? "bg-cyan-400" : "bg-rose-400"
+                }`}
+              />{" "}
+              z<sub>{lastIdx}</sub>
+            </span>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          <div className="rounded-xl border border-border bg-secondary/40 p-3 text-xs text-muted-foreground">
+            <div className="mb-1 font-medium text-foreground">Status</div>
+            <div>
+              Iterações exibidas:{" "}
+              <span className="font-mono text-foreground">
+                {Math.max(0, orbitVisible - 1)}
+              </span>{" "}
+              de{" "}
+              <span className="font-mono">
+                {points.length - 1}
+              </span>
+            </div>
+            {last && (
+              <div>
+                z<sub>{lastIdx}</sub> ={" "}
+                <span className="font-mono text-foreground">
+                  {fmt(last.re)} {last.im >= 0 ? "+" : "−"} {fmt(Math.abs(last.im))}i
+                </span>{" "}
+                · |z| ={" "}
+                <span className="font-mono text-foreground">{fmt(last.mod)}</span>
+              </div>
+            )}
+            {truncated && (
+              <div className="mt-1 text-amber-400/90">
+                A escala foi limitada para {SCALE_CAP}. Os últimos valores
+                cresceram além da área exibida.
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={onAnimate}
+              disabled={animating}
+            >
+              <Play className="mr-1 h-4 w-4" />
+              {animating ? "Animando…" : "Animar órbita"}
+            </Button>
+            <Button size="sm" variant="outline" onClick={onShowAll}>
+              Mostrar tudo
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
