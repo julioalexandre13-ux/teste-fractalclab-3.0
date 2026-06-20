@@ -363,15 +363,27 @@ function Geometria() {
                 Construa e explore fractais clássicos da geometria!
               </p>
             </div>
-            <button
-              onClick={resetGeometry}
-              aria-label="Restaurar padrão"
-              title="Restaurar padrão"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground shadow-sm hover:bg-secondary transition-colors flex-shrink-0"
-            >
-              <RotateCcw className="h-4 w-4" />
-            </button>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <button
+                onClick={() => setTourOpen(true)}
+                aria-label="Abrir tour guiado"
+                title="Tour guiado"
+                className="inline-flex h-10 min-w-11 items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-3 text-xs font-medium text-foreground shadow-sm hover:bg-secondary transition-colors"
+              >
+                <HelpCircle className="h-4 w-4 text-primary" />
+                <span className="hidden sm:inline">Tour</span>
+              </button>
+              <button
+                onClick={resetGeometry}
+                aria-label="Restaurar padrão"
+                title="Restaurar padrão"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground shadow-sm hover:bg-secondary transition-colors"
+              >
+                <RotateCcw className="h-4 w-4" />
+              </button>
+            </div>
           </header>
+
 
           <div className="grid grid-cols-1 2xl:grid-cols-[minmax(0,1fr)_300px] gap-6">
             <div className="space-y-6">
