@@ -339,6 +339,8 @@ function Geometria() {
   const [cantorIter, setCantorIter] = useState(initial?.cantorIter ?? 5);
   const [kochIter, setKochIter] = useState(initial?.kochIter ?? 4);
   const [sierIter, setSierIter] = useState(initial?.sierIter ?? 5);
+  const [tourOpen, setTourOpen] = useState(false);
+
 
   useEffect(() => {
     localStorage.setItem("fractalclab_geometry_state", JSON.stringify({ tab, cantorIter, kochIter, sierIter }));
