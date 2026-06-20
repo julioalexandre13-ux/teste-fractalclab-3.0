@@ -721,6 +721,10 @@ function OrbitDisplay({
             <Button size="sm" variant="outline" onClick={onShowAll}>
               Mostrar tudo
             </Button>
+            <Button size="sm" onClick={onOpenInMandelbrot}>
+              <ExternalLink className="mr-1 h-4 w-4" />
+              Abrir este c no Mandelbrot
+            </Button>
           </div>
         </div>
       </div>
