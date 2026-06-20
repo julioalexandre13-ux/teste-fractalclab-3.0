@@ -1,11 +1,44 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Play, Pause, RotateCcw, Sparkles, Target, ExternalLink } from "lucide-react";
+import { Play, Pause, RotateCcw, Sparkles, Target, ExternalLink, HelpCircle } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Math as TeX } from "@/components/Math";
+import { GuidedTour, type TourStep } from "@/components/GuidedTour";
 import type { PointsRequest, PointsResponse } from "../workers/mandelbrot-points.worker";
+
+const CONSTRUCAO_TOUR: TourStep[] = [
+  {
+    emoji: "🧱",
+    title: "Construção ponto a ponto",
+    description:
+      "Aqui você vê o conjunto de Mandelbrot ser desenhado aos poucos. Cada ponto é um número complexo c cuja sequência z₀ = 0, z_{n+1} = z_n² + c NÃO escapa ao infinito.",
+    tip: "Quanto mais pontos plotados, mais nítido fica o contorno da cardióide + bulbo.",
+  },
+  {
+    emoji: "▶️",
+    title: "Controles de animação",
+    description:
+      "Use Play/Pause para iniciar ou parar a plotagem. O controle de velocidade ajusta quantos pontos são desenhados por frame.",
+    tip: "Velocidades baixas ajudam a perceber a ordem em que os pontos aparecem.",
+  },
+  {
+    emoji: "🎯",
+    title: "Verificador de ponto",
+    description:
+      "Informe Re(c) e Im(c) para calcular a órbita daquele ponto: z₀, z₁, z₂… Você vê se a sequência escapa (ponto fora do conjunto) ou fica presa (ponto dentro).",
+    tip: "Tente c = -0,75 + 0,1 i (dentro) e c = 0,3 + 0,5 i (fora) para comparar.",
+  },
+  {
+    emoji: "🔗",
+    title: "Conexão com o laboratório",
+    description:
+      "Depois de verificar um ponto, use o botão de atalho para abrir o Conjunto de Julia correspondente no Laboratório principal — é a mesma constante c.",
+    tip: "Pontos DENTRO do Mandelbrot geram Julias conectados; pontos FORA geram poeira fragmentada.",
+  },
+];
+
 
 
 export const Route = createFileRoute("/construcao")({
