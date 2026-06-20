@@ -74,7 +74,7 @@ export function MandelbrotCanvas({
     }
 
     // (re)cria o buffer da imagem para esta requisição
-    const buf = new Uint8ClampedArray(W * H * 4);
+    const buf = new Uint8ClampedArray(new ArrayBuffer(W * H * 4));
     // Inicializa com a cor "fora do conjunto" para evitar flashes pretos.
     // Cada pixel será sobrescrito pelas passadas; o efeito de revelação
     // vem da própria ordem dispersa dos pontos.
