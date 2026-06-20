@@ -140,20 +140,33 @@ function ConstrucaoPage() {
 
 
 
-  // Gera os pontos uma única vez (em chunks via setTimeout p/ não travar UI).
+  // Gera os pontos uma única vez em um Web Worker (não bloqueia a UI).
   useEffect(() => {
     let cancelled = false;
-    // Computamos tudo de uma vez — ~25k pontos é rápido em JS moderno.
-    const id = window.setTimeout(() => {
+    const worker = new Worker(
+      new URL("../workers/mandelbrot-points.worker.ts", import.meta.url),
+      { type: "module" },
+    );
+    worker.onmessage = (e: MessageEvent<PointsResponse>) => {
       if (cancelled) return;
-      const pts = generateMandelbrotPoints(TOTAL_POINTS);
-      setPoints(pts);
-    }, 30);
+      const { buffer, count } = e.data;
+      setPoints(new Float32Array(buffer, 0, count * 2));
+    };
+    const req: PointsRequest = {
+      target: TOTAL_POINTS,
+      maxIter: MAX_ITER,
+      xMin: X_MIN,
+      xMax: X_MAX,
+      yMin: Y_MIN,
+      yMax: Y_MAX,
+    };
+    worker.postMessage(req);
     return () => {
       cancelled = true;
-      window.clearTimeout(id);
+      worker.terminate();
     };
   }, []);
+
 
   const total = points ? points.length / 2 : 0;
 
