@@ -1,12 +1,12 @@
 /**
  * Mandelbrot Web Worker
- * Executa o cálculo pixel-a-pixel fora da main thread,
- * evitando travar a interface do usuário.
+ * Renderização progressiva por pontos dispersos (estilo Adam7).
  *
- * Renderização progressiva: o cálculo é dividido em faixas
- * horizontais (lotes de linhas) e cada faixa é enviada via
- * postMessage assim que fica pronta, permitindo que o canvas
- * seja desenhado de cima para baixo.
+ * Calcula a imagem em várias passadas com passo decrescente,
+ * cobrindo toda a tela já na primeira passada (malha esparsa)
+ * e refinando até preencher cada pixel. Cada passada é enviada
+ * em lotes via postMessage como uma lista de posições + cores,
+ * permitindo que o canvas vá "emergindo" do esparso ao denso.
  */
 
 export type WorkerRequest = {
@@ -27,17 +27,14 @@ export type WorkerResponse =
   | {
       requestId: number;
       type: "chunk";
-      buffer: ArrayBuffer;
-      width: number;
-      height: number;
-      startY: number;
-      endY: number;
+      positions: ArrayBuffer; // Int32Array of pixel indices (y*width + x)
+      colors: ArrayBuffer;    // Uint8ClampedArray RGBA per pixel
+      count: number;
+      progress: number;       // 0..1
     }
   | {
       requestId: number;
       type: "done";
-      width: number;
-      height: number;
     };
 
 function applyPalette(
@@ -126,8 +123,6 @@ function applyPalette(
   data[idx + 3] = 255;
 }
 
-// Track the most recently requested render so older in-flight loops
-// can detect they were superseded and stop early.
 let currentRequestId = 0;
 
 self.onmessage = (e: MessageEvent<WorkerRequest>) => {
@@ -136,88 +131,116 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
 
   const maxIter = iterations;
   const p = power;
+  const total = width * height;
 
-  // Tamanho do lote de linhas — entre 8 e 20 conforme a altura.
-  const chunkRows = Math.max(8, Math.min(20, Math.round(height / 40)));
+  // Calcula a cor de um pixel e escreve em colorBuf no offset dado.
+  const computePixel = (px: number, py: number, colorBuf: Uint8ClampedArray, offset: number) => {
+    const cx = view.cx + (px - width / 2) * view.scale;
+    const cy = view.cy + (py - height / 2) * view.scale;
 
-  let startY = 0;
-  while (startY < height) {
-    // Cancelamento: se chegou um pedido mais novo, abandona este.
-    if (currentRequestId !== requestId) return;
+    let zx = isJulia ? cx : 0;
+    let zy = isJulia ? cy : 0;
+    const fixCx = isJulia ? (juliaC?.x ?? 0) : cx;
+    const fixCy = isJulia ? (juliaC?.y ?? 0) : cy;
 
-    const endY = Math.min(height, startY + chunkRows);
-    const rows = endY - startY;
-    const buf = new Uint8ClampedArray(width * rows * 4);
+    let i = 0;
+    let escaped = false;
 
-    for (let py = startY; py < endY; py++) {
-      const cy = view.cy + (py - height / 2) * view.scale;
-      const rowOffset = (py - startY) * width * 4;
-      for (let px = 0; px < width; px++) {
-        const cx = view.cx + (px - width / 2) * view.scale;
-
-        let zx = isJulia ? cx : 0;
-        let zy = isJulia ? cy : 0;
-        const fixCx = isJulia ? (juliaC?.x ?? 0) : cx;
-        const fixCy = isJulia ? (juliaC?.y ?? 0) : cy;
-
-        let i = 0;
-        let escaped = false;
-
-        for (; i < maxIter; i++) {
-          let nx: number, ny: number;
-          if (Number.isInteger(p) && p >= 2 && p <= 8) {
-            nx = zx; ny = zy;
-            for (let k = 1; k < p; k++) {
-              const tx = nx * zx - ny * zy;
-              ny = nx * zy + ny * zx;
-              nx = tx;
-            }
-          } else {
-            const r = Math.sqrt(zx * zx + zy * zy);
-            const theta = Math.atan2(zy, zx);
-            const rp = Math.pow(r, p);
-            nx = rp * Math.cos(p * theta);
-            ny = rp * Math.sin(p * theta);
-          }
-          const ax = aReal * nx - aImag * ny;
-          const ay = aReal * ny + aImag * nx;
-          zx = ax + fixCx;
-          zy = ay + fixCy;
-          if (zx * zx + zy * zy > 16) { escaped = true; break; }
+    for (; i < maxIter; i++) {
+      let nx: number, ny: number;
+      if (Number.isInteger(p) && p >= 2 && p <= 8) {
+        nx = zx; ny = zy;
+        for (let k = 1; k < p; k++) {
+          const tx = nx * zx - ny * zy;
+          ny = nx * zy + ny * zx;
+          nx = tx;
         }
-
-        const idx = rowOffset + px * 4;
-        if (!escaped) {
-          buf[idx] = 8; buf[idx + 1] = 10; buf[idx + 2] = 20; buf[idx + 3] = 255;
-        } else {
-          const log_zn = Math.log(zx * zx + zy * zy) / 2;
-          const nu = Math.log(log_zn / Math.log(2)) / Math.log(Math.max(2, p));
-          const t = Math.min(1, Math.max(0, (i + 1 - nu) / maxIter));
-          applyPalette(t, palette, buf, idx);
-        }
+      } else {
+        const r = Math.sqrt(zx * zx + zy * zy);
+        const theta = Math.atan2(zy, zx);
+        const rp = Math.pow(r, p);
+        nx = rp * Math.cos(p * theta);
+        ny = rp * Math.sin(p * theta);
       }
+      const ax = aReal * nx - aImag * ny;
+      const ay = aReal * ny + aImag * nx;
+      zx = ax + fixCx;
+      zy = ay + fixCy;
+      if (zx * zx + zy * zy > 16) { escaped = true; break; }
     }
 
-    if (currentRequestId !== requestId) return;
+    if (!escaped) {
+      colorBuf[offset] = 8;
+      colorBuf[offset + 1] = 10;
+      colorBuf[offset + 2] = 20;
+      colorBuf[offset + 3] = 255;
+    } else {
+      const log_zn = Math.log(zx * zx + zy * zy) / 2;
+      const nu = Math.log(log_zn / Math.log(2)) / Math.log(Math.max(2, p));
+      const t = Math.min(1, Math.max(0, (i + 1 - nu) / maxIter));
+      applyPalette(t, palette, colorBuf, offset);
+    }
+  };
 
-    const transferable = buf.buffer;
+  // Passadas com passo decrescente; cada passada cobre apenas pixels
+  // ainda não processados pelas anteriores. Passo inicial 8 → 4 → 2 → 1.
+  const steps = [8, 4, 2, 1];
+  // Tamanho do lote: ~6k pixels por mensagem para equilibrar overhead e fluidez.
+  const BATCH = 6000;
+
+  let pixelsDone = 0;
+
+  // Buffers reutilizáveis dentro do batch atual
+  let posBuf = new Int32Array(BATCH);
+  let colBuf = new Uint8ClampedArray(BATCH * 4);
+  let count = 0;
+
+  const flush = () => {
+    if (count === 0) return true;
+    if (currentRequestId !== requestId) return false;
+    pixelsDone += count;
+    const positions = posBuf.slice(0, count).buffer;
+    const colors = colBuf.slice(0, count * 4).buffer;
     const msg: WorkerResponse = {
       requestId,
       type: "chunk",
-      buffer: transferable,
-      width,
-      height,
-      startY,
-      endY,
+      positions,
+      colors,
+      count,
+      progress: Math.min(1, pixelsDone / total),
     };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (self as any).postMessage(msg, [transferable]);
+    (self as any).postMessage(msg, [positions, colors]);
+    posBuf = new Int32Array(BATCH);
+    colBuf = new Uint8ClampedArray(BATCH * 4);
+    count = 0;
+    return true;
+  };
 
-    startY = endY;
+  for (let s = 0; s < steps.length; s++) {
+    const step = steps[s];
+    const prev = s === 0 ? 0 : steps[s - 1];
+    for (let py = 0; py < height; py += step) {
+      for (let px = 0; px < width; px += step) {
+        // pula pixels já feitos por passada anterior (malha mais grossa)
+        if (prev > 0 && px % prev === 0 && py % prev === 0) continue;
+
+        computePixel(px, py, colBuf, count * 4);
+        posBuf[count] = py * width + px;
+        count++;
+
+        if (count >= BATCH) {
+          if (!flush()) return;
+          // cooperativa: cancela se requestId mudou
+          if (currentRequestId !== requestId) return;
+        }
+      }
+    }
+    if (!flush()) return;
   }
 
   if (currentRequestId !== requestId) return;
-  const done: WorkerResponse = { requestId, type: "done", width, height };
+  const done: WorkerResponse = { requestId, type: "done" };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (self as any).postMessage(done);
 };
