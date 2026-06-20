@@ -586,8 +586,8 @@ function OrbitDisplay({
       <div
         className={`rounded-xl border px-3 py-2 text-sm ${
           belongs
-            ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-            : "border-rose-500/30 bg-rose-500/10 text-rose-300"
+            ? "border-success/40 bg-success-soft text-success"
+            : "border-destructive/40 bg-destructive/10 text-destructive"
         }`}
       >
         {belongs ? (
@@ -633,7 +633,7 @@ function OrbitDisplay({
             <polyline
               points={polyline}
               fill="none"
-              stroke="rgba(120,200,255,0.85)"
+              stroke="var(--orbit-line)"
               strokeWidth={1.2}
             />
             {/* pontos */}
@@ -642,11 +642,11 @@ function OrbitDisplay({
               const isFirst = i === 0;
               const isLast = i === visible.length - 1;
               const color = isFirst
-                ? "#22c55e"
+                ? "var(--orbit-start)"
                 : isLast
                 ? belongs
-                  ? "#22d3ee"
-                  : "#fb7185"
+                  ? "var(--orbit-end-in)"
+                  : "var(--orbit-end-out)"
                 : "rgba(255,255,255,0.7)";
               const r = isFirst || isLast ? 4 : 2;
               return (
@@ -663,20 +663,20 @@ function OrbitDisplay({
           </svg>
           <div className="mt-1 flex justify-between px-1 text-[10px] text-muted-foreground">
             <span>
-              <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 align-middle" />{" "}
+              <span className="inline-block h-2 w-2 rounded-full bg-[var(--orbit-start)] align-middle" />{" "}
               z₀
             </span>
             <span>|z|=2 (círculo tracejado)</span>
             <span>
               <span
-                className={`inline-block h-2 w-2 rounded-full align-middle ${
-                  belongs ? "bg-cyan-400" : "bg-rose-400"
-                }`}
+                className="inline-block h-2 w-2 rounded-full align-middle"
+                style={{ background: belongs ? "var(--orbit-end-in)" : "var(--orbit-end-out)" }}
               />{" "}
               z<sub>{lastIdx}</sub>
             </span>
           </div>
         </div>
+
 
         <div className="flex flex-col gap-3">
           <div className="rounded-xl border border-border bg-secondary/40 p-3 text-xs text-muted-foreground">
