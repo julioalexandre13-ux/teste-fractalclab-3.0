@@ -161,7 +161,7 @@ export function GuidedTour({ open, onClose, steps, label = "Tour Guiado" }: Guid
 
         {/* Step dots */}
         <div className="flex items-center justify-center gap-1.5 py-4">
-          {TOUR_STEPS.map((_, i) => (
+          {tourSteps.map((_, i) => (
             <button
               key={i}
               onClick={() => setStep(i)}
@@ -169,6 +169,7 @@ export function GuidedTour({ open, onClose, steps, label = "Tour Guiado" }: Guid
                 }`}
             />
           ))}
+
         </div>
 
         {/* Navigation */}
