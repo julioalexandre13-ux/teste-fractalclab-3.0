@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { X, ChevronRight, ChevronLeft, Sparkles } from "lucide-react";
 
-interface TourStep {
+export interface TourStep {
   title: string;
   description: string;
   emoji: string;
   tip?: string;
 }
+
 
 const TOUR_STEPS: TourStep[] = [
   {
