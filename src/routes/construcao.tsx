@@ -158,7 +158,10 @@ function ConstrucaoPage() {
     setOrbitVisible(1);
   };
 
+  const [tourOpen, setTourOpen] = useState(false);
+
   useEffect(() => {
+
     if (!animatingOrbit || !orbit) return;
     if (orbitVisible >= orbit.points.length) {
       setAnimatingOrbit(false);
