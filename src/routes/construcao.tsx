@@ -272,7 +272,8 @@ function ConstrucaoPage() {
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
               Cada ponto plotado é um número complexo <em>c</em> tal que a
-              recorrência <code className="rounded bg-secondary px-1 py-0.5 text-xs">z₀ = 0, z_(n+1) = z_n² + c</code>{" "}
+              recorrência{" "}
+              <TeX tex="z_0 = 0,\ z_{n+1} = z_n^{2} + c" className="mx-1" />{" "}
               <strong>não escapa</strong> ao infinito. Use o controle abaixo
               para ver como a famosa silhueta vai surgindo de poucos pontos
               até a imagem completa.
