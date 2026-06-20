@@ -130,7 +130,7 @@ export function GuidedTour({ open, onClose, steps, label = "Tour Guiado" }: Guid
         <div className="flex items-center justify-between px-6 pt-5">
           <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
             <Sparkles className="h-3.5 w-3.5 text-primary" />
-            Tour Guiado — {step + 1} / {TOUR_STEPS.length}
+            {label} — {step + 1} / {tourSteps.length}
           </div>
           <button
             onClick={onClose}
