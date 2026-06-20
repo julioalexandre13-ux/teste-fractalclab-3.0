@@ -1,7 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Play, Pause, RotateCcw, Sparkles } from "lucide-react";
+import { Play, Pause, RotateCcw, Sparkles, Target } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+
 
 export const Route = createFileRoute("/construcao")({
   head: () => ({
