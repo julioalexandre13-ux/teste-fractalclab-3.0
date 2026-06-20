@@ -702,7 +702,7 @@ function OrbitDisplay({
               </div>
             )}
             {truncated && (
-              <div className="mt-1 text-amber-400/90">
+              <div className="mt-1 text-warn">
                 A escala foi limitada para {SCALE_CAP}. Os últimos valores
                 cresceram além da área exibida.
               </div>
