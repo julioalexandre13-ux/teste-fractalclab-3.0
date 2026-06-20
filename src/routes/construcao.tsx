@@ -25,6 +25,9 @@ export const Route = createFileRoute("/construcao")({
 const TOTAL_POINTS = 25000;
 const MAX_ITER = 120;
 
+/** Cor de fundo dos canvases — espelha --canvas-bg em src/styles.css. */
+const CANVAS_BG_CSS = "oklch(0.08 0.02 240)";
+
 // Domínio visualizado
 const X_MIN = -2.1;
 const X_MAX = 0.7;
@@ -198,14 +201,14 @@ function ConstrucaoPage() {
 
     // Se diminuiu, redesenha do zero.
     if (count < lastDrawnRef.current) {
-      ctx.fillStyle = "oklch(0.08 0.02 240)";
+      ctx.fillStyle = CANVAS_BG_CSS;
       ctx.fillRect(0, 0, W, H);
       drawAxes(ctx, W, H);
       lastDrawnRef.current = 0;
     }
 
     if (lastDrawnRef.current === 0) {
-      ctx.fillStyle = "oklch(0.08 0.02 240)";
+      ctx.fillStyle = CANVAS_BG_CSS;
       ctx.fillRect(0, 0, W, H);
       drawAxes(ctx, W, H);
     }
@@ -290,7 +293,7 @@ function ConstrucaoPage() {
           <section className="rounded-2xl border border-border bg-card p-4 md:p-5">
             <div
               ref={wrapRef}
-              className="relative aspect-[14/10] w-full overflow-hidden rounded-xl bg-[oklch(0.08_0.02_240)]"
+              className="relative aspect-[14/10] w-full overflow-hidden rounded-xl bg-canvas"
             >
               <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />
               {!points && (
@@ -319,9 +322,9 @@ function ConstrucaoPage() {
                     aria-hidden
                   >
                     <div className="relative">
-                      <div className="absolute left-1/2 top-1/2 h-4 w-px -translate-x-1/2 -translate-y-1/2 bg-[#ff5577]" />
-                      <div className="absolute left-1/2 top-1/2 h-px w-4 -translate-x-1/2 -translate-y-1/2 bg-[#ff5577]" />
-                      <div className="h-3 w-3 rounded-full border-2 border-[#ff5577] bg-[#ff557733]" />
+                      <div className="absolute left-1/2 top-1/2 h-4 w-px -translate-x-1/2 -translate-y-1/2 bg-marker" />
+                      <div className="absolute left-1/2 top-1/2 h-px w-4 -translate-x-1/2 -translate-y-1/2 bg-marker" />
+                      <div className="h-3 w-3 rounded-full border-2 border-marker bg-marker/20" />
                     </div>
                   </div>
                 )}
@@ -583,8 +586,8 @@ function OrbitDisplay({
       <div
         className={`rounded-xl border px-3 py-2 text-sm ${
           belongs
-            ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-            : "border-rose-500/30 bg-rose-500/10 text-rose-300"
+            ? "border-success/40 bg-success-soft text-success"
+            : "border-destructive/40 bg-destructive/10 text-destructive"
         }`}
       >
         {belongs ? (
@@ -605,7 +608,7 @@ function OrbitDisplay({
       </div>
 
       <div className="grid gap-4 md:grid-cols-[auto_1fr]">
-        <div className="mx-auto rounded-xl border border-border bg-[oklch(0.08_0.02_240)] p-2">
+        <div className="mx-auto rounded-xl border border-border bg-canvas p-2">
           <svg
             width={SVG}
             height={SVG}
@@ -630,7 +633,7 @@ function OrbitDisplay({
             <polyline
               points={polyline}
               fill="none"
-              stroke="rgba(120,200,255,0.85)"
+              stroke="var(--orbit-line)"
               strokeWidth={1.2}
             />
             {/* pontos */}
@@ -639,11 +642,11 @@ function OrbitDisplay({
               const isFirst = i === 0;
               const isLast = i === visible.length - 1;
               const color = isFirst
-                ? "#22c55e"
+                ? "var(--orbit-start)"
                 : isLast
                 ? belongs
-                  ? "#22d3ee"
-                  : "#fb7185"
+                  ? "var(--orbit-end-in)"
+                  : "var(--orbit-end-out)"
                 : "rgba(255,255,255,0.7)";
               const r = isFirst || isLast ? 4 : 2;
               return (
@@ -660,20 +663,20 @@ function OrbitDisplay({
           </svg>
           <div className="mt-1 flex justify-between px-1 text-[10px] text-muted-foreground">
             <span>
-              <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 align-middle" />{" "}
+              <span className="inline-block h-2 w-2 rounded-full bg-[var(--orbit-start)] align-middle" />{" "}
               z₀
             </span>
             <span>|z|=2 (círculo tracejado)</span>
             <span>
               <span
-                className={`inline-block h-2 w-2 rounded-full align-middle ${
-                  belongs ? "bg-cyan-400" : "bg-rose-400"
-                }`}
+                className="inline-block h-2 w-2 rounded-full align-middle"
+                style={{ background: belongs ? "var(--orbit-end-in)" : "var(--orbit-end-out)" }}
               />{" "}
               z<sub>{lastIdx}</sub>
             </span>
           </div>
         </div>
+
 
         <div className="flex flex-col gap-3">
           <div className="rounded-xl border border-border bg-secondary/40 p-3 text-xs text-muted-foreground">
@@ -699,7 +702,7 @@ function OrbitDisplay({
               </div>
             )}
             {truncated && (
-              <div className="mt-1 text-amber-400/90">
+              <div className="mt-1 text-warn">
                 A escala foi limitada para {SCALE_CAP}. Os últimos valores
                 cresceram além da área exibida.
               </div>

@@ -59,10 +59,23 @@ const DEFAULT_STATE: SavedLabState = {
   view: { cx: -0.5, cy: 0, scale: 4 / 600 }, palette: "default", juliaPoint: null,
 };
 
+// v2 — qualquer mudança incompatível em SavedLabState/HistoryEntry deve incrementar o sufixo.
+const LAB_STATE_KEY = "fractalclab_lab_state_v2";
+const HISTORY_KEY = "fractalclab_history_v2";
+const LEGACY_LAB_STATE_KEY = "fractalclab_lab_state";
+const LEGACY_HISTORY_KEY = "fractalclab_history";
+
 function readLabState(): SavedLabState {
   if (typeof window === "undefined") return DEFAULT_STATE;
   try {
-    return { ...DEFAULT_STATE, ...JSON.parse(localStorage.getItem("fractalclab_lab_state") ?? "{}") };
+    const raw = localStorage.getItem(LAB_STATE_KEY) ?? localStorage.getItem(LEGACY_LAB_STATE_KEY);
+    if (!raw) return DEFAULT_STATE;
+    const parsed = JSON.parse(raw);
+    // Migração silenciosa: descarta a chave antiga após ler.
+    if (!localStorage.getItem(LAB_STATE_KEY)) {
+      localStorage.removeItem(LEGACY_LAB_STATE_KEY);
+    }
+    return { ...DEFAULT_STATE, ...parsed };
   } catch { return DEFAULT_STATE; }
 }
 
@@ -87,7 +100,8 @@ function PlanoComplexo() {
   const [saveOpen, setSaveOpen] = useState(false);
   const [history, setHistory] = useState<HistoryEntry[]>(() => {
     try {
-      return JSON.parse(localStorage.getItem("fractalclab_history") ?? "[]");
+      const raw = localStorage.getItem(HISTORY_KEY) ?? localStorage.getItem(LEGACY_HISTORY_KEY) ?? "[]";
+      return JSON.parse(raw);
     } catch { return []; }
   });
 
@@ -98,7 +112,7 @@ function PlanoComplexo() {
   const lastSavedRef = useRef<HistoryEntry | null>(null);
 
   useEffect(() => {
-    localStorage.setItem("fractalclab_lab_state", JSON.stringify({ preset, a, p, iterations, view, palette, juliaPoint }));
+    localStorage.setItem(LAB_STATE_KEY, JSON.stringify({ preset, a, p, iterations, view, palette, juliaPoint }));
   }, [preset, a, p, iterations, view, palette, juliaPoint]);
 
   // Save history only on significant changes (debounced)
@@ -120,7 +134,7 @@ function PlanoComplexo() {
       lastSavedRef.current = entry;
       setHistory((prev) => {
         const next = [entry, ...prev].slice(0, 5);
-        localStorage.setItem("fractalclab_history", JSON.stringify(next));
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
         return next;
       });
     }, 1500);
@@ -241,7 +255,7 @@ function PlanoComplexo() {
   const zoomLabel = zoomLevel >= 100 ? `${zoomLevel.toFixed(0)}×` : zoomLevel >= 10 ? `${zoomLevel.toFixed(1)}×` : `${zoomLevel.toFixed(2)}×`;
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-dvh bg-background">
       <Sidebar />
       <main className="flex-1 overflow-x-hidden">
         <div className="mx-auto max-w-[1400px] px-4 md:px-8 py-8">
