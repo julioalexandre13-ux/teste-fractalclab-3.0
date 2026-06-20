@@ -535,12 +535,14 @@ function OrbitDisplay({
   onAnimate,
   animating,
   onShowAll,
+  onOpenInMandelbrot,
 }: {
   orbit: OrbitResult;
   orbitVisible: number;
   onAnimate: () => void;
   animating: boolean;
   onShowAll: () => void;
+  onOpenInMandelbrot: () => void;
 }) {
   const { cRe, cIm, points, escapeIteration } = orbit;
   const belongs = escapeIteration === null;
