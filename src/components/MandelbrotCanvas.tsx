@@ -128,7 +128,7 @@ export function MandelbrotCanvas({
           buf[idx + 2] = colors[c + 2];
           buf[idx + 3] = 255;
         }
-        const imageData = new ImageData(buf, img.w, img.h);
+        const imageData = new ImageData(new Uint8ClampedArray(buf.buffer, buf.byteOffset, buf.byteLength), img.w, img.h);
         ctx.putImageData(imageData, 0, 0);
         paintedRef.current = true;
         setLoading(false);
