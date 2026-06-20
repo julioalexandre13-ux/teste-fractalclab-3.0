@@ -302,18 +302,18 @@ function PlanoComplexo() {
       <main className="flex-1 overflow-x-hidden">
         <div className="mx-auto max-w-[1400px] px-4 md:px-8 py-8">
           {/* Header */}
-          <header className="mb-6 flex flex-col md:flex-row md:items-start justify-between gap-5 pt-16 md:pt-0">
-            <div className="flex-1 w-full px-2 md:px-0">
+          <header className="mb-6 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 pt-16 md:pt-0">
+            <div className="min-w-0 px-2 md:px-0">
               <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-foreground">Fractais Algébricos</h1>
-              <p className="mt-2 text-base md:text-sm text-muted-foreground">
+              <p className="mt-2 text-sm text-muted-foreground">
                 Altere os parâmetros, observe o fractal e descubra padrões incríveis!
               </p>
             </div>
-            <div className="flex items-center gap-2 flex-shrink-0 self-start md:self-auto w-full md:w-auto overflow-x-auto pb-2 md:pb-0 px-2 md:px-0">
+            <div className="flex shrink-0 items-center gap-2 self-start">
               <button
                 onClick={() => setTourOpen(true)}
                 aria-label="Como funciona?"
-                className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-3 md:px-4 py-2 text-sm font-medium text-foreground shadow-sm hover:bg-secondary transition-colors"
+                className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border bg-card px-3 md:px-4 py-2 text-sm font-medium text-foreground shadow-sm hover:bg-secondary transition-colors"
               >
                 <HelpCircle className="h-4 w-4" /> <span className="hidden sm:inline">Como funciona?</span>
               </button>
@@ -321,7 +321,7 @@ function PlanoComplexo() {
                 onClick={() => setHistoryOpen(true)}
                 aria-label="Histórico de explorações"
                 title="Histórico de explorações"
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground shadow-sm hover:bg-secondary transition-colors"
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground shadow-sm hover:bg-secondary transition-colors"
               >
                 <History className="h-4 w-4" />
               </button>
@@ -329,7 +329,7 @@ function PlanoComplexo() {
                 onClick={resetAll}
                 aria-label="Restaurar padrão"
                 title="Restaurar padrão"
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground shadow-sm hover:bg-secondary transition-colors"
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground shadow-sm hover:bg-secondary transition-colors"
               >
                 <RotateCcw className="h-4 w-4" />
               </button>
@@ -337,7 +337,7 @@ function PlanoComplexo() {
                 onClick={saveImage}
                 aria-label="Salvar imagem"
                 title="Salvar imagem"
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground shadow-sm hover:bg-secondary transition-colors"
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground shadow-sm hover:bg-secondary transition-colors"
               >
                 <Download className="h-4 w-4" />
               </button>
