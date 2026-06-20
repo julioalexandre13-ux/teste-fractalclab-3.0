@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { X, ChevronRight, ChevronLeft, Sparkles } from "lucide-react";
 
-interface TourStep {
+export interface TourStep {
   title: string;
   description: string;
   emoji: string;
   tip?: string;
 }
+
 
 const TOUR_STEPS: TourStep[] = [
   {
@@ -77,9 +78,12 @@ const TOUR_STEPS: TourStep[] = [
 interface GuidedTourProps {
   open: boolean;
   onClose: () => void;
+  steps?: TourStep[];
+  label?: string;
 }
 
-export function GuidedTour({ open, onClose }: GuidedTourProps) {
+export function GuidedTour({ open, onClose, steps, label = "Tour Guiado" }: GuidedTourProps) {
+  const tourSteps = steps && steps.length > 0 ? steps : TOUR_STEPS;
   const [step, setStep] = useState(0);
 
   useEffect(() => {
@@ -90,18 +94,19 @@ export function GuidedTour({ open, onClose }: GuidedTourProps) {
     const handler = (e: KeyboardEvent) => {
       if (!open) return;
       if (e.key === "Escape") onClose();
-      if (e.key === "ArrowRight" && step < TOUR_STEPS.length - 1) setStep((s) => s + 1);
+      if (e.key === "ArrowRight" && step < tourSteps.length - 1) setStep((s) => s + 1);
       if (e.key === "ArrowLeft" && step > 0) setStep((s) => s - 1);
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [open, step, onClose]);
+  }, [open, step, onClose, tourSteps.length]);
 
   if (!open) return null;
 
-  const current = TOUR_STEPS[step];
-  const isLast = step === TOUR_STEPS.length - 1;
-  const progress = ((step + 1) / TOUR_STEPS.length) * 100;
+  const current = tourSteps[step];
+  const isLast = step === tourSteps.length - 1;
+  const progress = ((step + 1) / tourSteps.length) * 100;
+
 
   return (
     <div
@@ -125,7 +130,7 @@ export function GuidedTour({ open, onClose }: GuidedTourProps) {
         <div className="flex items-center justify-between px-6 pt-5">
           <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
             <Sparkles className="h-3.5 w-3.5 text-primary" />
-            Tour Guiado — {step + 1} / {TOUR_STEPS.length}
+            {label} — {step + 1} / {tourSteps.length}
           </div>
           <button
             onClick={onClose}
@@ -156,7 +161,7 @@ export function GuidedTour({ open, onClose }: GuidedTourProps) {
 
         {/* Step dots */}
         <div className="flex items-center justify-center gap-1.5 py-4">
-          {TOUR_STEPS.map((_, i) => (
+          {tourSteps.map((_, i) => (
             <button
               key={i}
               onClick={() => setStep(i)}
@@ -164,6 +169,7 @@ export function GuidedTour({ open, onClose }: GuidedTourProps) {
                 }`}
             />
           ))}
+
         </div>
 
         {/* Navigation */}
