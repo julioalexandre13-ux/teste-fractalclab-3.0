@@ -1,7 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Play, Pause, RotateCcw, Sparkles } from "lucide-react";
+import { Play, Pause, RotateCcw, Sparkles, Target } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+
 
 export const Route = createFileRoute("/construcao")({
   head: () => ({
@@ -74,6 +77,35 @@ function generateMandelbrotPoints(target: number): Float32Array {
   return out.subarray(0, found * 2) as Float32Array;
 }
 
+type OrbitResult = {
+  cRe: number;
+  cIm: number;
+  points: { re: number; im: number; mod: number }[];
+  escapeIteration: number | null; // null => não escapou em MAX_ITER
+};
+
+function computeOrbit(cRe: number, cIm: number): OrbitResult {
+  const pts: { re: number; im: number; mod: number }[] = [
+    { re: 0, im: 0, mod: 0 },
+  ];
+  let zx = 0,
+    zy = 0;
+  let escapeIteration: number | null = null;
+  for (let i = 1; i <= MAX_ITER; i++) {
+    const nx = zx * zx - zy * zy + cRe;
+    const ny = 2 * zx * zy + cIm;
+    zx = nx;
+    zy = ny;
+    const mod = Math.hypot(zx, zy);
+    pts.push({ re: zx, im: zy, mod });
+    if (mod > 2) {
+      escapeIteration = i;
+      break;
+    }
+  }
+  return { cRe, cIm, points: pts, escapeIteration };
+}
+
 function ConstrucaoPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -83,6 +115,51 @@ function ConstrucaoPage() {
   const [speed, setSpeed] = useState(400); // pontos por frame
   const rafRef = useRef<number | null>(null);
   const lastDrawnRef = useRef(0);
+
+  // Verificador de ponto
+  const [cReStr, setCReStr] = useState("-0.75");
+  const [cImStr, setCImStr] = useState("0.1");
+  const [pointError, setPointError] = useState<string | null>(null);
+  const [orbit, setOrbit] = useState<OrbitResult | null>(null);
+  const [orbitVisible, setOrbitVisible] = useState(0); // qtos pontos da órbita exibir
+  const [animatingOrbit, setAnimatingOrbit] = useState(false);
+  const orbitTimerRef = useRef<number | null>(null);
+
+  const handleVerify = () => {
+    const re = Number(cReStr.replace(",", "."));
+    const im = Number(cImStr.replace(",", "."));
+    if (!Number.isFinite(re) || !Number.isFinite(im)) {
+      setPointError("Informe números válidos para Re(c) e Im(c).");
+      return;
+    }
+    setPointError(null);
+    const o = computeOrbit(re, im);
+    setOrbit(o);
+    setOrbitVisible(o.points.length);
+    setAnimatingOrbit(false);
+  };
+
+  const startOrbitAnimation = () => {
+    if (!orbit) return;
+    setAnimatingOrbit(true);
+    setOrbitVisible(1);
+  };
+
+  useEffect(() => {
+    if (!animatingOrbit || !orbit) return;
+    if (orbitVisible >= orbit.points.length) {
+      setAnimatingOrbit(false);
+      return;
+    }
+    orbitTimerRef.current = window.setTimeout(() => {
+      setOrbitVisible((v) => v + 1);
+    }, 200);
+    return () => {
+      if (orbitTimerRef.current) window.clearTimeout(orbitTimerRef.current);
+    };
+  }, [animatingOrbit, orbitVisible, orbit]);
+
+
 
   // Gera os pontos uma única vez (em chunks via setTimeout p/ não travar UI).
   useEffect(() => {
@@ -227,6 +304,28 @@ function ConstrucaoPage() {
               <div className="pointer-events-none absolute left-2 top-2 rounded-md bg-black/60 px-2 py-1 font-mono text-[10px] text-white/80 backdrop-blur-sm">
                 {count.toLocaleString("pt-BR")} / {total.toLocaleString("pt-BR")} pontos · {pct}%
               </div>
+              {orbit &&
+                orbit.cRe >= X_MIN &&
+                orbit.cRe <= X_MAX &&
+                orbit.cIm >= Y_MIN &&
+                orbit.cIm <= Y_MAX && (
+                  <div
+                    className="pointer-events-none absolute"
+                    style={{
+                      left: `${((orbit.cRe - X_MIN) / (X_MAX - X_MIN)) * 100}%`,
+                      top: `${(1 - (orbit.cIm - Y_MIN) / (Y_MAX - Y_MIN)) * 100}%`,
+                      transform: "translate(-50%, -50%)",
+                    }}
+                    aria-hidden
+                  >
+                    <div className="relative">
+                      <div className="absolute left-1/2 top-1/2 h-4 w-px -translate-x-1/2 -translate-y-1/2 bg-[#ff5577]" />
+                      <div className="absolute left-1/2 top-1/2 h-px w-4 -translate-x-1/2 -translate-y-1/2 bg-[#ff5577]" />
+                      <div className="h-3 w-3 rounded-full border-2 border-[#ff5577] bg-[#ff557733]" />
+                    </div>
+                  </div>
+                )}
+
             </div>
 
             {/* Controles */}
@@ -312,7 +411,70 @@ function ConstrucaoPage() {
             </div>
           </section>
 
+          {/* === Verificador de Ponto === */}
+          <section className="mt-6 rounded-2xl border border-border bg-card p-4 md:p-5">
+            <div className="flex items-center gap-2 text-xs font-medium text-primary">
+              <Target className="h-4 w-4" />
+              Verificador de ponto
+            </div>
+            <h2 className="mt-1 text-lg font-semibold tracking-tight md:text-xl">
+              Esse <em>c</em> pertence ao conjunto?
+            </h2>
+            <p className="mt-1 max-w-2xl text-xs text-muted-foreground">
+              Digite as partes real e imaginária de <em>c</em>. Calculamos
+              iteração por iteração até {MAX_ITER} passos, com{" "}
+              <code className="rounded bg-secondary px-1">z₀ = 0</code> e{" "}
+              <code className="rounded bg-secondary px-1">z_(n+1) = z_n² + c</code>.
+            </p>
+
+            <div className="mt-4 grid gap-3 md:grid-cols-[1fr_1fr_auto]">
+              <label className="block text-xs">
+                <span className="mb-1 block text-muted-foreground">Re(c)</span>
+                <Input
+                  inputMode="decimal"
+                  value={cReStr}
+                  onChange={(e) => setCReStr(e.target.value)}
+                  placeholder="-0.75"
+                />
+              </label>
+              <label className="block text-xs">
+                <span className="mb-1 block text-muted-foreground">Im(c)</span>
+                <Input
+                  inputMode="decimal"
+                  value={cImStr}
+                  onChange={(e) => setCImStr(e.target.value)}
+                  placeholder="0.1"
+                />
+              </label>
+              <div className="flex items-end">
+                <Button onClick={handleVerify} className="w-full md:w-auto">
+                  Verificar
+                </Button>
+              </div>
+            </div>
+
+            {pointError && (
+              <div className="mt-3 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+                {pointError}
+              </div>
+            )}
+
+            {orbit && (
+              <OrbitDisplay
+                orbit={orbit}
+                orbitVisible={orbitVisible}
+                onAnimate={startOrbitAnimation}
+                animating={animatingOrbit}
+                onShowAll={() => {
+                  setAnimatingOrbit(false);
+                  setOrbitVisible(orbit.points.length);
+                }}
+              />
+            )}
+          </section>
+
           <section className="mt-6 grid gap-4 md:grid-cols-2">
+
             <Info
               title="Como cada ponto é decidido"
               body={
@@ -363,6 +525,203 @@ function Info({ title, body }: { title: string; body: React.ReactNode }) {
     <div className="rounded-2xl border border-border bg-card p-4">
       <div className="text-sm font-semibold text-foreground">{title}</div>
       <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{body}</p>
+    </div>
+  );
+}
+
+function OrbitDisplay({
+  orbit,
+  orbitVisible,
+  onAnimate,
+  animating,
+  onShowAll,
+}: {
+  orbit: OrbitResult;
+  orbitVisible: number;
+  onAnimate: () => void;
+  animating: boolean;
+  onShowAll: () => void;
+}) {
+  const { cRe, cIm, points, escapeIteration } = orbit;
+  const belongs = escapeIteration === null;
+  const lastIdx = Math.min(orbitVisible, points.length) - 1;
+  const last = points[Math.max(0, lastIdx)];
+
+  // Escala dinâmica: incluir todos os pontos visíveis (com margem).
+  const visible = points.slice(0, Math.max(1, orbitVisible));
+  let maxAbs = 2.2;
+  for (const p of visible) {
+    maxAbs = Math.max(maxAbs, Math.abs(p.re), Math.abs(p.im));
+  }
+  // Limita escala absurda quando escapa para o infinito.
+  const SCALE_CAP = 50;
+  const truncated = maxAbs > SCALE_CAP;
+  const R = Math.min(maxAbs, SCALE_CAP) * 1.1;
+
+  const SVG = 360;
+  const toPx = (re: number, im: number) => ({
+    x: ((re + R) / (2 * R)) * SVG,
+    y: SVG - ((im + R) / (2 * R)) * SVG,
+  });
+
+  const polyline = visible
+    .map((p) => {
+      const { x, y } = toPx(p.re, p.im);
+      return `${x.toFixed(2)},${y.toFixed(2)}`;
+    })
+    .join(" ");
+
+  const fmt = (n: number) => {
+    if (!Number.isFinite(n)) return "∞";
+    if (Math.abs(n) >= 1000) return n.toExponential(2);
+    return n.toFixed(3);
+  };
+  const cLabel = `${fmt(cRe)} ${cIm >= 0 ? "+" : "−"} ${fmt(Math.abs(cIm))}i`;
+
+  return (
+    <div className="mt-5 space-y-4">
+      <div
+        className={`rounded-xl border px-3 py-2 text-sm ${
+          belongs
+            ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+            : "border-rose-500/30 bg-rose-500/10 text-rose-300"
+        }`}
+      >
+        {belongs ? (
+          <>
+            ✅ <strong>c = {cLabel}</strong> pertence ao Conjunto de Mandelbrot
+            (após {MAX_ITER} iterações, |z| permaneceu ≤ 2). |z<sub>{MAX_ITER}</sub>| ={" "}
+            <span className="font-mono">{fmt(points[points.length - 1].mod)}</span>.
+          </>
+        ) : (
+          <>
+            ❌ <strong>c = {cLabel}</strong> NÃO pertence ao Conjunto de
+            Mandelbrot — a órbita escapou na iteração{" "}
+            <strong>{escapeIteration}</strong>, onde |z
+            <sub>{escapeIteration}</sub>| ={" "}
+            <span className="font-mono">{fmt(points[points.length - 1].mod)}</span>.
+          </>
+        )}
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-[auto_1fr]">
+        <div className="mx-auto rounded-xl border border-border bg-[oklch(0.08_0.02_240)] p-2">
+          <svg
+            width={SVG}
+            height={SVG}
+            viewBox={`0 0 ${SVG} ${SVG}`}
+            className="block max-w-full"
+          >
+            {/* eixos */}
+            <line x1={0} y1={SVG / 2} x2={SVG} y2={SVG / 2} stroke="rgba(255,255,255,0.18)" />
+            <line x1={SVG / 2} y1={0} x2={SVG / 2} y2={SVG} stroke="rgba(255,255,255,0.18)" />
+            {/* círculo |z|=2 de referência */}
+            {2 <= R && (
+              <circle
+                cx={SVG / 2}
+                cy={SVG / 2}
+                r={(2 / R) * (SVG / 2)}
+                fill="none"
+                stroke="rgba(255,255,255,0.18)"
+                strokeDasharray="3 3"
+              />
+            )}
+            {/* poligonal */}
+            <polyline
+              points={polyline}
+              fill="none"
+              stroke="rgba(120,200,255,0.85)"
+              strokeWidth={1.2}
+            />
+            {/* pontos */}
+            {visible.map((p, i) => {
+              const { x, y } = toPx(p.re, p.im);
+              const isFirst = i === 0;
+              const isLast = i === visible.length - 1;
+              const color = isFirst
+                ? "#22c55e"
+                : isLast
+                ? belongs
+                  ? "#22d3ee"
+                  : "#fb7185"
+                : "rgba(255,255,255,0.7)";
+              const r = isFirst || isLast ? 4 : 2;
+              return (
+                <circle
+                  key={i}
+                  cx={x}
+                  cy={y}
+                  r={r}
+                  fill={color}
+                  stroke={isFirst || isLast ? "rgba(0,0,0,0.4)" : "none"}
+                />
+              );
+            })}
+          </svg>
+          <div className="mt-1 flex justify-between px-1 text-[10px] text-muted-foreground">
+            <span>
+              <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 align-middle" />{" "}
+              z₀
+            </span>
+            <span>|z|=2 (círculo tracejado)</span>
+            <span>
+              <span
+                className={`inline-block h-2 w-2 rounded-full align-middle ${
+                  belongs ? "bg-cyan-400" : "bg-rose-400"
+                }`}
+              />{" "}
+              z<sub>{lastIdx}</sub>
+            </span>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          <div className="rounded-xl border border-border bg-secondary/40 p-3 text-xs text-muted-foreground">
+            <div className="mb-1 font-medium text-foreground">Status</div>
+            <div>
+              Iterações exibidas:{" "}
+              <span className="font-mono text-foreground">
+                {Math.max(0, orbitVisible - 1)}
+              </span>{" "}
+              de{" "}
+              <span className="font-mono">
+                {points.length - 1}
+              </span>
+            </div>
+            {last && (
+              <div>
+                z<sub>{lastIdx}</sub> ={" "}
+                <span className="font-mono text-foreground">
+                  {fmt(last.re)} {last.im >= 0 ? "+" : "−"} {fmt(Math.abs(last.im))}i
+                </span>{" "}
+                · |z| ={" "}
+                <span className="font-mono text-foreground">{fmt(last.mod)}</span>
+              </div>
+            )}
+            {truncated && (
+              <div className="mt-1 text-amber-400/90">
+                A escala foi limitada para {SCALE_CAP}. Os últimos valores
+                cresceram além da área exibida.
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={onAnimate}
+              disabled={animating}
+            >
+              <Play className="mr-1 h-4 w-4" />
+              {animating ? "Animando…" : "Animar órbita"}
+            </Button>
+            <Button size="sm" variant="outline" onClick={onShowAll}>
+              Mostrar tudo
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
