@@ -411,7 +411,70 @@ function ConstrucaoPage() {
             </div>
           </section>
 
+          {/* === Verificador de Ponto === */}
+          <section className="mt-6 rounded-2xl border border-border bg-card p-4 md:p-5">
+            <div className="flex items-center gap-2 text-xs font-medium text-primary">
+              <Target className="h-4 w-4" />
+              Verificador de ponto
+            </div>
+            <h2 className="mt-1 text-lg font-semibold tracking-tight md:text-xl">
+              Esse <em>c</em> pertence ao conjunto?
+            </h2>
+            <p className="mt-1 max-w-2xl text-xs text-muted-foreground">
+              Digite as partes real e imaginária de <em>c</em>. Calculamos
+              iteração por iteração até {MAX_ITER} passos, com{" "}
+              <code className="rounded bg-secondary px-1">z₀ = 0</code> e{" "}
+              <code className="rounded bg-secondary px-1">z_(n+1) = z_n² + c</code>.
+            </p>
+
+            <div className="mt-4 grid gap-3 md:grid-cols-[1fr_1fr_auto]">
+              <label className="block text-xs">
+                <span className="mb-1 block text-muted-foreground">Re(c)</span>
+                <Input
+                  inputMode="decimal"
+                  value={cReStr}
+                  onChange={(e) => setCReStr(e.target.value)}
+                  placeholder="-0.75"
+                />
+              </label>
+              <label className="block text-xs">
+                <span className="mb-1 block text-muted-foreground">Im(c)</span>
+                <Input
+                  inputMode="decimal"
+                  value={cImStr}
+                  onChange={(e) => setCImStr(e.target.value)}
+                  placeholder="0.1"
+                />
+              </label>
+              <div className="flex items-end">
+                <Button onClick={handleVerify} className="w-full md:w-auto">
+                  Verificar
+                </Button>
+              </div>
+            </div>
+
+            {pointError && (
+              <div className="mt-3 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+                {pointError}
+              </div>
+            )}
+
+            {orbit && (
+              <OrbitDisplay
+                orbit={orbit}
+                orbitVisible={orbitVisible}
+                onAnimate={startOrbitAnimation}
+                animating={animatingOrbit}
+                onShowAll={() => {
+                  setAnimatingOrbit(false);
+                  setOrbitVisible(orbit.points.length);
+                }}
+              />
+            )}
+          </section>
+
           <section className="mt-6 grid gap-4 md:grid-cols-2">
+
             <Info
               title="Como cada ponto é decidido"
               body={
