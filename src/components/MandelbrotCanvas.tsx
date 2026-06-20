@@ -38,6 +38,9 @@ export function MandelbrotCanvas({
   const pinchRef = useRef<number | null>(null);
   const requestRef = useRef(0);
   const paintedRef = useRef(false);
+  // Buffer persistente da imagem em construção; pixels já desenhados
+  // por passadas anteriores são preservados quando novas chegam.
+  const imageBufRef = useRef<{ data: Uint8ClampedArray; w: number; h: number } | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [coords, setCoords] = useState<{ re: number; im: number } | null>(null);
@@ -54,7 +57,7 @@ export function MandelbrotCanvas({
     };
   }, []);
 
-  // Render fractal via worker (progressivo, faixa por faixa)
+  // Render fractal via worker (progressivo, pontos dispersos / Adam7)
   useEffect(() => {
     const canvas = canvasRef.current;
     const wrap = wrapRef.current;
@@ -69,6 +72,16 @@ export function MandelbrotCanvas({
       canvas.height = H;
       paintedRef.current = false;
     }
+
+    // (re)cria o buffer da imagem para esta requisição
+    const buf = new Uint8ClampedArray(W * H * 4);
+    // Inicializa com a cor "fora do conjunto" para evitar flashes pretos.
+    // Cada pixel será sobrescrito pelas passadas; o efeito de revelação
+    // vem da própria ordem dispersa dos pontos.
+    for (let i = 0; i < buf.length; i += 4) {
+      buf[i] = 8; buf[i + 1] = 10; buf[i + 2] = 20; buf[i + 3] = 255;
+    }
+    imageBufRef.current = { data: buf, w: W, h: H };
 
     if (!paintedRef.current) setLoading(true);
     const requestId = ++requestRef.current;
@@ -89,18 +102,34 @@ export function MandelbrotCanvas({
 
     worker.onmessage = (e: MessageEvent) => {
       const data = e.data as
-        | { requestId: number; type: "chunk"; buffer: ArrayBuffer; width: number; height: number; startY: number; endY: number }
-        | { requestId: number; type: "done"; width: number; height: number };
+        | {
+            requestId: number;
+            type: "chunk";
+            positions: ArrayBuffer;
+            colors: ArrayBuffer;
+            count: number;
+            progress: number;
+          }
+        | { requestId: number; type: "done" };
       if (data.requestId !== requestRef.current) return;
       const ctx = canvas.getContext("2d");
-      if (!ctx) return;
+      const img = imageBufRef.current;
+      if (!ctx || !img) return;
 
       if (data.type === "chunk") {
-        const rows = data.endY - data.startY;
-        const arr = new Uint8ClampedArray(data.buffer);
-        const imageData = new ImageData(arr, data.width, rows);
-        ctx.putImageData(imageData, 0, data.startY);
-        // Esconde o spinner assim que a primeira faixa chega
+        const positions = new Int32Array(data.positions);
+        const colors = new Uint8ClampedArray(data.colors);
+        const buf = img.data;
+        for (let i = 0; i < data.count; i++) {
+          const idx = positions[i] * 4;
+          const c = i * 4;
+          buf[idx]     = colors[c];
+          buf[idx + 1] = colors[c + 1];
+          buf[idx + 2] = colors[c + 2];
+          buf[idx + 3] = 255;
+        }
+        const imageData = new ImageData(buf, img.w, img.h);
+        ctx.putImageData(imageData, 0, 0);
         paintedRef.current = true;
         setLoading(false);
       }
