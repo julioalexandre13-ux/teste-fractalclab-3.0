@@ -77,6 +77,35 @@ function generateMandelbrotPoints(target: number): Float32Array {
   return out.subarray(0, found * 2) as Float32Array;
 }
 
+type OrbitResult = {
+  cRe: number;
+  cIm: number;
+  points: { re: number; im: number; mod: number }[];
+  escapeIteration: number | null; // null => não escapou em MAX_ITER
+};
+
+function computeOrbit(cRe: number, cIm: number): OrbitResult {
+  const pts: { re: number; im: number; mod: number }[] = [
+    { re: 0, im: 0, mod: 0 },
+  ];
+  let zx = 0,
+    zy = 0;
+  let escapeIteration: number | null = null;
+  for (let i = 1; i <= MAX_ITER; i++) {
+    const nx = zx * zx - zy * zy + cRe;
+    const ny = 2 * zx * zy + cIm;
+    zx = nx;
+    zy = ny;
+    const mod = Math.hypot(zx, zy);
+    pts.push({ re: zx, im: zy, mod });
+    if (mod > 2) {
+      escapeIteration = i;
+      break;
+    }
+  }
+  return { cRe, cIm, points: pts, escapeIteration };
+}
+
 function ConstrucaoPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -86,6 +115,51 @@ function ConstrucaoPage() {
   const [speed, setSpeed] = useState(400); // pontos por frame
   const rafRef = useRef<number | null>(null);
   const lastDrawnRef = useRef(0);
+
+  // Verificador de ponto
+  const [cReStr, setCReStr] = useState("-0.75");
+  const [cImStr, setCImStr] = useState("0.1");
+  const [pointError, setPointError] = useState<string | null>(null);
+  const [orbit, setOrbit] = useState<OrbitResult | null>(null);
+  const [orbitVisible, setOrbitVisible] = useState(0); // qtos pontos da órbita exibir
+  const [animatingOrbit, setAnimatingOrbit] = useState(false);
+  const orbitTimerRef = useRef<number | null>(null);
+
+  const handleVerify = () => {
+    const re = Number(cReStr.replace(",", "."));
+    const im = Number(cImStr.replace(",", "."));
+    if (!Number.isFinite(re) || !Number.isFinite(im)) {
+      setPointError("Informe números válidos para Re(c) e Im(c).");
+      return;
+    }
+    setPointError(null);
+    const o = computeOrbit(re, im);
+    setOrbit(o);
+    setOrbitVisible(o.points.length);
+    setAnimatingOrbit(false);
+  };
+
+  const startOrbitAnimation = () => {
+    if (!orbit) return;
+    setAnimatingOrbit(true);
+    setOrbitVisible(1);
+  };
+
+  useEffect(() => {
+    if (!animatingOrbit || !orbit) return;
+    if (orbitVisible >= orbit.points.length) {
+      setAnimatingOrbit(false);
+      return;
+    }
+    orbitTimerRef.current = window.setTimeout(() => {
+      setOrbitVisible((v) => v + 1);
+    }, 200);
+    return () => {
+      if (orbitTimerRef.current) window.clearTimeout(orbitTimerRef.current);
+    };
+  }, [animatingOrbit, orbitVisible, orbit]);
+
+
 
   // Gera os pontos uma única vez (em chunks via setTimeout p/ não travar UI).
   useEffect(() => {
