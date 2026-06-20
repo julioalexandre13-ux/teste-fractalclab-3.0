@@ -299,23 +299,35 @@ function ConstrucaoPage() {
       <Sidebar />
       <main className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-6xl px-4 py-8 md:px-8 md:py-10">
-          <header className="mb-6 pl-14 md:pl-0">
-            <div className="flex items-center gap-2 text-xs font-medium text-primary">
-              <Sparkles className="h-4 w-4" />
-              Construção do conjunto
+          <header className="mb-6 pl-14 md:pl-0 flex items-start justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 text-xs font-medium text-primary">
+                <Sparkles className="h-4 w-4" />
+                Construção do conjunto
+              </div>
+              <h1 className="mt-1 text-2xl font-semibold tracking-tight md:text-3xl">
+                O Mandelbrot, ponto a ponto
+              </h1>
+              <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+                Cada ponto plotado é um número complexo <em>c</em> tal que a
+                recorrência{" "}
+                <TeX tex="z_0 = 0,\ z_{n+1} = z_n^{2} + c" className="mx-1" />{" "}
+                <strong>não escapa</strong> ao infinito. Use o controle abaixo
+                para ver como a famosa silhueta vai surgindo de poucos pontos
+                até a imagem completa.
+              </p>
             </div>
-            <h1 className="mt-1 text-2xl font-semibold tracking-tight md:text-3xl">
-              O Mandelbrot, ponto a ponto
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-              Cada ponto plotado é um número complexo <em>c</em> tal que a
-              recorrência{" "}
-              <TeX tex="z_0 = 0,\ z_{n+1} = z_n^{2} + c" className="mx-1" />{" "}
-              <strong>não escapa</strong> ao infinito. Use o controle abaixo
-              para ver como a famosa silhueta vai surgindo de poucos pontos
-              até a imagem completa.
-            </p>
+            <button
+              onClick={() => setTourOpen(true)}
+              aria-label="Abrir tour guiado"
+              title="Tour guiado"
+              className="inline-flex h-10 min-w-11 items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-3 text-xs font-medium text-foreground shadow-sm hover:bg-secondary transition-colors flex-shrink-0"
+            >
+              <HelpCircle className="h-4 w-4 text-primary" />
+              <span className="hidden sm:inline">Tour</span>
+            </button>
           </header>
+
 
           <section className="rounded-2xl border border-border bg-card p-4 md:p-5">
             <div
