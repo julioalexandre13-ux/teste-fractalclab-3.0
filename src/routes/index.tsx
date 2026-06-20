@@ -302,14 +302,14 @@ function PlanoComplexo() {
       <main className="flex-1 overflow-x-hidden">
         <div className="mx-auto max-w-[1400px] px-4 md:px-8 py-8">
           {/* Header */}
-          <header className="mb-6 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 pt-16 md:pt-0">
+          <header className="mb-6 flex flex-col gap-4 pt-16 sm:grid sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start sm:gap-4 md:pt-0">
             <div className="min-w-0 px-2 md:px-0">
               <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-foreground">Fractais Algébricos</h1>
               <p className="mt-2 text-sm text-muted-foreground">
                 Altere os parâmetros, observe o fractal e descubra padrões incríveis!
               </p>
             </div>
-            <div className="flex shrink-0 items-center gap-2 self-start">
+            <div className="flex shrink-0 flex-wrap items-center gap-2 self-start px-2 md:px-0">
               <button
                 onClick={() => setTourOpen(true)}
                 aria-label="Como funciona?"
