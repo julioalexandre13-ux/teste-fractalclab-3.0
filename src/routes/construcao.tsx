@@ -290,7 +290,7 @@ function ConstrucaoPage() {
           <section className="rounded-2xl border border-border bg-card p-4 md:p-5">
             <div
               ref={wrapRef}
-              className="relative aspect-[14/10] w-full overflow-hidden rounded-xl bg-[oklch(0.08_0.02_240)]"
+              className="relative aspect-[14/10] w-full overflow-hidden rounded-xl bg-canvas"
             >
               <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />
               {!points && (
@@ -605,7 +605,7 @@ function OrbitDisplay({
       </div>
 
       <div className="grid gap-4 md:grid-cols-[auto_1fr]">
-        <div className="mx-auto rounded-xl border border-border bg-[oklch(0.08_0.02_240)] p-2">
+        <div className="mx-auto rounded-xl border border-border bg-canvas p-2">
           <svg
             width={SVG}
             height={SVG}

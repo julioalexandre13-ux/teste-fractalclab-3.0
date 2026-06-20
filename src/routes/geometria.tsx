@@ -299,7 +299,7 @@ function Geometria() {
   }
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-dvh bg-background">
       <Sidebar collapseUntilLarge />
       <main className="flex-1 overflow-x-hidden">
         <div className="mx-auto max-w-[1400px] px-4 md:px-8 py-8">

@@ -241,7 +241,7 @@ function PlanoComplexo() {
   const zoomLabel = zoomLevel >= 100 ? `${zoomLevel.toFixed(0)}×` : zoomLevel >= 10 ? `${zoomLevel.toFixed(1)}×` : `${zoomLevel.toFixed(2)}×`;
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-dvh bg-background">
       <Sidebar />
       <main className="flex-1 overflow-x-hidden">
         <div className="mx-auto max-w-[1400px] px-4 md:px-8 py-8">

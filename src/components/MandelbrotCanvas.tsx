@@ -244,7 +244,7 @@ export function MandelbrotCanvas({
   return (
     <div
       ref={wrapRef}
-      className="relative h-full w-full overflow-hidden rounded-xl bg-[oklch(0.08_0.02_240)]"
+      className="relative h-full w-full overflow-hidden rounded-xl bg-canvas"
       onWheel={handleWheel}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
