@@ -54,7 +54,7 @@ export function MandelbrotCanvas({
     };
   }, []);
 
-  // Render fractal via worker
+  // Render fractal via worker (progressivo, faixa por faixa)
   useEffect(() => {
     const canvas = canvasRef.current;
     const wrap = wrapRef.current;
@@ -87,21 +87,28 @@ export function MandelbrotCanvas({
       juliaC,
     };
 
-    // Replace previous handler
     worker.onmessage = (e: MessageEvent) => {
-      const { requestId: completedId, buffer, width, height } = e.data;
-      if (completedId !== requestRef.current) return;
+      const data = e.data as
+        | { requestId: number; type: "chunk"; buffer: ArrayBuffer; width: number; height: number; startY: number; endY: number }
+        | { requestId: number; type: "done"; width: number; height: number };
+      if (data.requestId !== requestRef.current) return;
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
-      const arr = new Uint8ClampedArray(buffer);
-      const imageData = new ImageData(arr, width, height);
-      ctx.putImageData(imageData, 0, 0);
-      paintedRef.current = true;
-      setLoading(false);
+
+      if (data.type === "chunk") {
+        const rows = data.endY - data.startY;
+        const arr = new Uint8ClampedArray(data.buffer);
+        const imageData = new ImageData(arr, data.width, rows);
+        ctx.putImageData(imageData, 0, data.startY);
+        // Esconde o spinner assim que a primeira faixa chega
+        paintedRef.current = true;
+        setLoading(false);
+      }
     };
 
     worker.postMessage(msg);
   }, [power, aReal, aImag, iterations, view, palette, isJulia, juliaC]);
+
 
   // Pixel to complex coordinate
   const pixelToComplex = useCallback(
