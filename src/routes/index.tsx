@@ -141,6 +141,22 @@ function PlanoComplexo() {
     localStorage.setItem(LAB_STATE_KEY, JSON.stringify({ preset, a, p, iterations, view, palette, juliaPoint }));
   }, [preset, a, p, iterations, view, palette, juliaPoint]);
 
+  // Abrir Julia quando navegado via /?cRe=...&cIm=...&julia=1 (ponte do verificador).
+  useEffect(() => {
+    if (
+      typeof search.cRe === "number" &&
+      typeof search.cIm === "number" &&
+      search.julia === 1
+    ) {
+      setJuliaPoint({ x: search.cRe, y: search.cIm });
+      setJuliaReal(String(search.cRe));
+      setJuliaImag(String(search.cIm));
+    }
+    // Roda só quando a query muda.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search.cRe, search.cIm, search.julia]);
+
+
   // Save history only on significant changes (debounced)
   useEffect(() => {
     if (saveTimer.current) clearTimeout(saveTimer.current);
