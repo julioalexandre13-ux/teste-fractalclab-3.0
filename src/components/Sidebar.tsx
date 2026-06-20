@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Compass, Triangle, Menu, X } from "lucide-react";
+import { Compass, Triangle, Menu, X, Sparkles } from "lucide-react";
 
 function SidebarContent({ onClose }: { onClose?: () => void }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -19,6 +19,13 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
       sub: "(Cantor, Koch, Sierpinski)",
       icon: Triangle,
       active: pathname.startsWith("/geometria"),
+    },
+    {
+      to: "/construcao",
+      label: "Construção do Mandelbrot",
+      sub: "(ponto a ponto)",
+      icon: Sparkles,
+      active: pathname.startsWith("/construcao"),
     },
   ];
 
@@ -84,7 +91,11 @@ export function Sidebar({ collapseUntilLarge = false }: { collapseUntilLarge?: b
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const desktopClass = collapseUntilLarge ? "hidden lg:flex" : "hidden md:flex";
   const mobileClass = collapseUntilLarge ? "lg:hidden" : "md:hidden";
-  const currentLabel = pathname.startsWith("/geometria") ? "Geométricos" : "Algébricos";
+  const currentLabel = pathname.startsWith("/geometria")
+    ? "Geométricos"
+    : pathname.startsWith("/construcao")
+      ? "Construção"
+      : "Algébricos";
 
   return (
     <>

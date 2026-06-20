@@ -10,11 +10,17 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as GeometriaRouteImport } from './routes/geometria'
+import { Route as ConstrucaoRouteImport } from './routes/construcao'
 import { Route as IndexRouteImport } from './routes/index'
 
 const GeometriaRoute = GeometriaRouteImport.update({
   id: '/geometria',
   path: '/geometria',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConstrucaoRoute = ConstrucaoRouteImport.update({
+  id: '/construcao',
+  path: '/construcao',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -25,27 +31,31 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/construcao': typeof ConstrucaoRoute
   '/geometria': typeof GeometriaRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/construcao': typeof ConstrucaoRoute
   '/geometria': typeof GeometriaRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/construcao': typeof ConstrucaoRoute
   '/geometria': typeof GeometriaRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/geometria'
+  fullPaths: '/' | '/construcao' | '/geometria'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/geometria'
-  id: '__root__' | '/' | '/geometria'
+  to: '/' | '/construcao' | '/geometria'
+  id: '__root__' | '/' | '/construcao' | '/geometria'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ConstrucaoRoute: typeof ConstrucaoRoute
   GeometriaRoute: typeof GeometriaRoute
 }
 
@@ -56,6 +66,13 @@ declare module '@tanstack/react-router' {
       path: '/geometria'
       fullPath: '/geometria'
       preLoaderRoute: typeof GeometriaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/construcao': {
+      id: '/construcao'
+      path: '/construcao'
+      fullPath: '/construcao'
+      preLoaderRoute: typeof ConstrucaoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -70,6 +87,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ConstrucaoRoute: ConstrucaoRoute,
   GeometriaRoute: GeometriaRoute,
 }
 export const routeTree = rootRouteImport
