@@ -8,14 +8,39 @@ import {
 import { Sidebar } from "@/components/Sidebar";
 import { MandelbrotCanvas, type Palette as PaletteType } from "@/components/MandelbrotCanvas";
 import { GuidedTour } from "@/components/GuidedTour";
+import { Math as TeX } from "@/components/Math";
+
+type HomeSearch = { cRe?: number; cIm?: number; julia?: number };
 
 export const Route = createFileRoute("/")({
+  validateSearch: (search: Record<string, unknown>): HomeSearch => ({
+    cRe: typeof search.cRe === "number" ? search.cRe : undefined,
+    cIm: typeof search.cIm === "number" ? search.cIm : undefined,
+    julia: typeof search.julia === "number" ? search.julia : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "FractalCLab — Laboratório de Fractais" },
       { name: "description", content: "Explore o conjunto de Mandelbrot e descubra padrões matemáticos incríveis." },
       { property: "og:title", content: "FractalCLab — Laboratório de Fractais" },
       { property: "og:description", content: "Ferramenta educacional para explorar fractais no ensino médio." },
+      { property: "og:url", content: "/" },
+      { property: "og:type", content: "website" },
+    ],
+    links: [{ rel: "canonical", href: "/" }],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "LearningResource",
+          name: "FractalCLab — Fractais Algébricos",
+          inLanguage: "pt-BR",
+          learningResourceType: "Interactive simulation",
+          educationalUse: "instruction",
+          about: "Conjunto de Mandelbrot, fractais algébricos, plano complexo",
+        }),
+      },
     ],
   }),
   component: PlanoComplexo,
@@ -82,6 +107,7 @@ function readLabState(): SavedLabState {
 // ---------------------------------------------------------------------------
 
 function PlanoComplexo() {
+  const search = Route.useSearch();
   const initial = useRef(readLabState()).current;
   const [preset, setPreset] = useState(initial.preset);
   const [a, setA] = useState(initial.a);
@@ -114,6 +140,22 @@ function PlanoComplexo() {
   useEffect(() => {
     localStorage.setItem(LAB_STATE_KEY, JSON.stringify({ preset, a, p, iterations, view, palette, juliaPoint }));
   }, [preset, a, p, iterations, view, palette, juliaPoint]);
+
+  // Abrir Julia quando navegado via /?cRe=...&cIm=...&julia=1 (ponte do verificador).
+  useEffect(() => {
+    if (
+      typeof search.cRe === "number" &&
+      typeof search.cIm === "number" &&
+      search.julia === 1
+    ) {
+      setJuliaPoint({ x: search.cRe, y: search.cIm });
+      setJuliaReal(String(search.cRe));
+      setJuliaImag(String(search.cIm));
+    }
+    // Roda só quando a query muda.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search.cRe, search.cIm, search.julia]);
+
 
   // Save history only on significant changes (debounced)
   useEffect(() => {
@@ -260,18 +302,18 @@ function PlanoComplexo() {
       <main className="flex-1 overflow-x-hidden">
         <div className="mx-auto max-w-[1400px] px-4 md:px-8 py-8">
           {/* Header */}
-          <header className="mb-6 flex flex-col md:flex-row md:items-start justify-between gap-5 pt-16 md:pt-0">
-            <div className="flex-1 w-full px-2 md:px-0">
+          <header className="mb-6 flex flex-col gap-4 pt-16 md:grid md:grid-cols-[minmax(0,1fr)_auto] md:items-start md:gap-4 md:pt-0">
+            <div className="min-w-0 px-2 md:px-0">
               <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-foreground">Fractais Algébricos</h1>
-              <p className="mt-2 text-base md:text-sm text-muted-foreground">
+              <p className="mt-2 text-sm text-muted-foreground">
                 Altere os parâmetros, observe o fractal e descubra padrões incríveis!
               </p>
             </div>
-            <div className="flex items-center gap-2 flex-shrink-0 self-start md:self-auto w-full md:w-auto overflow-x-auto pb-2 md:pb-0 px-2 md:px-0">
+            <div className="flex shrink-0 flex-wrap items-center gap-2 self-start px-2 md:px-0">
               <button
                 onClick={() => setTourOpen(true)}
                 aria-label="Como funciona?"
-                className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-3 md:px-4 py-2 text-sm font-medium text-foreground shadow-sm hover:bg-secondary transition-colors"
+                className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border bg-card px-3 md:px-4 py-2 text-sm font-medium text-foreground shadow-sm hover:bg-secondary transition-colors"
               >
                 <HelpCircle className="h-4 w-4" /> <span className="hidden sm:inline">Como funciona?</span>
               </button>
@@ -279,7 +321,7 @@ function PlanoComplexo() {
                 onClick={() => setHistoryOpen(true)}
                 aria-label="Histórico de explorações"
                 title="Histórico de explorações"
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground shadow-sm hover:bg-secondary transition-colors"
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground shadow-sm hover:bg-secondary transition-colors"
               >
                 <History className="h-4 w-4" />
               </button>
@@ -287,7 +329,7 @@ function PlanoComplexo() {
                 onClick={resetAll}
                 aria-label="Restaurar padrão"
                 title="Restaurar padrão"
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground shadow-sm hover:bg-secondary transition-colors"
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground shadow-sm hover:bg-secondary transition-colors"
               >
                 <RotateCcw className="h-4 w-4" />
               </button>
@@ -295,23 +337,23 @@ function PlanoComplexo() {
                 onClick={saveImage}
                 aria-label="Salvar imagem"
                 title="Salvar imagem"
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground shadow-sm hover:bg-secondary transition-colors"
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground shadow-sm hover:bg-secondary transition-colors"
               >
                 <Download className="h-4 w-4" />
               </button>
             </div>
           </header>
 
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_300px]">
             {/* Center column */}
             <div className="space-y-6">
               {/* Formula panel */}
               <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
                 <div className="flex flex-wrap items-center gap-6">
                   <div className="min-w-[200px]">
-                    <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Fórmula Atual</div>
-                    <div className="mt-2 font-serif text-2xl italic text-foreground">
-                      z<sub>n+1</sub> = A · z<sub>n</sub><sup>P</sup> + c
+                    <h2 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Fórmula Atual</h2>
+                    <div className="mt-2 text-2xl text-foreground">
+                      <TeX tex="z_{n+1} = A \cdot z_n^{P} + c" />
                     </div>
                     <div className="mt-1 text-[11px] text-muted-foreground">
                       Dim. Hausdorff ≈ <span className="font-semibold text-primary">{hausdorffDim}</span>
@@ -561,7 +603,7 @@ function PlanoComplexo() {
 
               {/* How it works */}
               <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-                <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Como Funciona?</h3>
+                <h2 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Como Funciona?</h2>
                 <div className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-4">
                   <Step n={1} icon={<Target className="h-7 w-7" />} text={<>Escolha um ponto <em>c</em> no plano complexo.</>} />
                   <Step n={2} icon={<Loader2 className="h-7 w-7" />} text={<>Começamos em z₀ = 0 e aplicamos a fórmula.</>} />
@@ -572,7 +614,7 @@ function PlanoComplexo() {
 
               {/* Math concepts */}
               <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-                <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Conceitos Matemáticos</h3>
+                <h2 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Conceitos Matemáticos</h2>
                 <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <ConceptCard
                     title="Auto-similaridade"
@@ -596,7 +638,7 @@ function PlanoComplexo() {
             {/* Right column */}
             <aside className="space-y-5">
               <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-                <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Exemplos Rápidos</h3>
+                <h2 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Exemplos Rápidos</h2>
                 <p className="mt-1 text-xs text-muted-foreground">Carregue configurações prontas:</p>
                 <div className="mt-4 space-y-2">
                   {PRESETS.map((pr) => {
@@ -617,7 +659,7 @@ function PlanoComplexo() {
               </div>
 
               <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-                <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Sobre os Parâmetros</h3>
+                <h2 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Sobre os Parâmetros</h2>
                 <ul className="mt-3 space-y-3 text-xs leading-relaxed text-muted-foreground">
                   <li><span className="font-semibold text-[oklch(0.5_0.16_150)]">A real:</span> escala as órbitas no eixo real.</li>
                   <li><span className="font-semibold text-[oklch(0.5_0.18_255)]">A imag:</span> rotaciona as órbitas no plano complexo.</li>

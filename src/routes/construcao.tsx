@@ -1,19 +1,40 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Play, Pause, RotateCcw, Sparkles, Target } from "lucide-react";
+import { Play, Pause, RotateCcw, Sparkles, Target, ExternalLink } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Math as TeX } from "@/components/Math";
+import type { PointsRequest, PointsResponse } from "../workers/mandelbrot-points.worker";
 
 
 export const Route = createFileRoute("/construcao")({
   head: () => ({
     meta: [
-      { title: "FractalCLab — Construção do Mandelbrot" },
+      { title: "Construção do Mandelbrot — FractalCLab" },
       {
         name: "description",
         content:
           "Veja o conjunto de Mandelbrot se formar ponto a ponto a partir da recorrência z_{n+1} = z_n² + c.",
+      },
+      { property: "og:title", content: "Construção do Mandelbrot — FractalCLab" },
+      { property: "og:description", content: "Animação do conjunto de Mandelbrot se formando ponto a ponto." },
+      { property: "og:url", content: "/construcao" },
+      { property: "og:type", content: "article" },
+    ],
+    links: [{ rel: "canonical", href: "/construcao" }],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "LearningResource",
+          name: "Construção do Conjunto de Mandelbrot",
+          inLanguage: "pt-BR",
+          learningResourceType: "Interactive simulation",
+          educationalUse: "instruction",
+          about: "Conjunto de Mandelbrot, recorrência z_{n+1} = z_n^2 + c",
+        }),
       },
     ],
   }),
@@ -34,51 +55,6 @@ const X_MAX = 0.7;
 const Y_MIN = -1.25;
 const Y_MAX = 1.25;
 
-/** Gera, por amostragem aleatória, pontos c que NÃO escapam (∈ Mandelbrot). */
-function generateMandelbrotPoints(target: number): Float32Array {
-  const out = new Float32Array(target * 2);
-  let found = 0;
-  // Limite de segurança para não travar caso target seja muito alto.
-  let attempts = 0;
-  const maxAttempts = target * 60;
-
-  while (found < target && attempts < maxAttempts) {
-    attempts++;
-    const cx = X_MIN + Math.random() * (X_MAX - X_MIN);
-    const cy = Y_MIN + Math.random() * (Y_MAX - Y_MIN);
-
-    // Cardioid + period-2 bulb early-accept (evita iterar pontos certamente dentro)
-    const q = (cx - 0.25) * (cx - 0.25) + cy * cy;
-    const inCardioid = q * (q + (cx - 0.25)) <= 0.25 * cy * cy;
-    const inBulb = (cx + 1) * (cx + 1) + cy * cy <= 0.0625;
-
-    let inside = inCardioid || inBulb;
-    if (!inside) {
-      let zx = 0,
-        zy = 0;
-      let escaped = false;
-      for (let i = 0; i < MAX_ITER; i++) {
-        const nx = zx * zx - zy * zy + cx;
-        const ny = 2 * zx * zy + cy;
-        zx = nx;
-        zy = ny;
-        if (zx * zx + zy * zy > 4) {
-          escaped = true;
-          break;
-        }
-      }
-      inside = !escaped;
-    }
-
-    if (inside) {
-      out[found * 2] = cx;
-      out[found * 2 + 1] = cy;
-      found++;
-    }
-  }
-
-  return out.subarray(0, found * 2) as Float32Array;
-}
 
 type OrbitResult = {
   cRe: number;
@@ -110,6 +86,7 @@ function computeOrbit(cRe: number, cIm: number): OrbitResult {
 }
 
 function ConstrucaoPage() {
+  const navigate = useNavigate();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const [points, setPoints] = useState<Float32Array | null>(null);
@@ -164,20 +141,33 @@ function ConstrucaoPage() {
 
 
 
-  // Gera os pontos uma única vez (em chunks via setTimeout p/ não travar UI).
+  // Gera os pontos uma única vez em um Web Worker (não bloqueia a UI).
   useEffect(() => {
     let cancelled = false;
-    // Computamos tudo de uma vez — ~25k pontos é rápido em JS moderno.
-    const id = window.setTimeout(() => {
+    const worker = new Worker(
+      new URL("../workers/mandelbrot-points.worker.ts", import.meta.url),
+      { type: "module" },
+    );
+    worker.onmessage = (e: MessageEvent<PointsResponse>) => {
       if (cancelled) return;
-      const pts = generateMandelbrotPoints(TOTAL_POINTS);
-      setPoints(pts);
-    }, 30);
+      const { buffer, count } = e.data;
+      setPoints(new Float32Array(buffer, 0, count * 2));
+    };
+    const req: PointsRequest = {
+      target: TOTAL_POINTS,
+      maxIter: MAX_ITER,
+      xMin: X_MIN,
+      xMax: X_MAX,
+      yMin: Y_MIN,
+      yMax: Y_MAX,
+    };
+    worker.postMessage(req);
     return () => {
       cancelled = true;
-      window.clearTimeout(id);
+      worker.terminate();
     };
   }, []);
+
 
   const total = points ? points.length / 2 : 0;
 
@@ -283,7 +273,8 @@ function ConstrucaoPage() {
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
               Cada ponto plotado é um número complexo <em>c</em> tal que a
-              recorrência <code className="rounded bg-secondary px-1 py-0.5 text-xs">z₀ = 0, z_(n+1) = z_n² + c</code>{" "}
+              recorrência{" "}
+              <TeX tex="z_0 = 0,\ z_{n+1} = z_n^{2} + c" className="mx-1" />{" "}
               <strong>não escapa</strong> ao infinito. Use o controle abaixo
               para ver como a famosa silhueta vai surgindo de poucos pontos
               até a imagem completa.
@@ -426,8 +417,8 @@ function ConstrucaoPage() {
             <p className="mt-1 max-w-2xl text-xs text-muted-foreground">
               Digite as partes real e imaginária de <em>c</em>. Calculamos
               iteração por iteração até {MAX_ITER} passos, com{" "}
-              <code className="rounded bg-secondary px-1">z₀ = 0</code> e{" "}
-              <code className="rounded bg-secondary px-1">z_(n+1) = z_n² + c</code>.
+              <TeX tex="z_0 = 0" /> e{" "}
+              <TeX tex="z_{n+1} = z_n^{2} + c" />.
             </p>
 
             <div className="mt-4 grid gap-3 md:grid-cols-[1fr_1fr_auto]">
@@ -472,6 +463,12 @@ function ConstrucaoPage() {
                   setAnimatingOrbit(false);
                   setOrbitVisible(orbit.points.length);
                 }}
+                onOpenInMandelbrot={() => {
+                  navigate({
+                    to: "/",
+                    search: { cRe: orbit.cRe, cIm: orbit.cIm, julia: 1 },
+                  });
+                }}
               />
             )}
           </section>
@@ -483,8 +480,8 @@ function ConstrucaoPage() {
               body={
                 <>
                   Para cada candidato <em>c</em>, iteramos{" "}
-                  <code className="rounded bg-secondary px-1">z_(n+1) = z_n² + c</code>{" "}
-                  com <em>z₀ = 0</em>. Se após {MAX_ITER} iterações o módulo
+                  <TeX tex="z_{n+1} = z_n^{2} + c" />{" "}
+                  com <TeX tex="z_0 = 0" />. Se após {MAX_ITER} iterações o módulo
                   permanece ≤ 2, consideramos que <em>c</em> pertence ao
                   conjunto e o desenhamos.
                 </>
@@ -538,12 +535,14 @@ function OrbitDisplay({
   onAnimate,
   animating,
   onShowAll,
+  onOpenInMandelbrot,
 }: {
   orbit: OrbitResult;
   orbitVisible: number;
   onAnimate: () => void;
   animating: boolean;
   onShowAll: () => void;
+  onOpenInMandelbrot: () => void;
 }) {
   const { cRe, cIm, points, escapeIteration } = orbit;
   const belongs = escapeIteration === null;
@@ -721,6 +720,10 @@ function OrbitDisplay({
             </Button>
             <Button size="sm" variant="outline" onClick={onShowAll}>
               Mostrar tudo
+            </Button>
+            <Button size="sm" onClick={onOpenInMandelbrot}>
+              <ExternalLink className="mr-1 h-4 w-4" />
+              Abrir este c no Mandelbrot
             </Button>
           </div>
         </div>
