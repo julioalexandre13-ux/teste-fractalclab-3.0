@@ -9,8 +9,26 @@ import { Sidebar } from "@/components/Sidebar";
 export const Route = createFileRoute("/geometria")({
   head: () => ({
     meta: [
-      { title: "FractalCLab — Fractais Geométricos" },
+      { title: "Fractais Geométricos — FractalCLab" },
       { name: "description", content: "Construa e explore fractais geométricos clássicos: Cantor, Koch e Sierpinski." },
+      { property: "og:title", content: "Fractais Geométricos — FractalCLab" },
+      { property: "og:description", content: "Cantor, Koch e Sierpinski iteração por iteração." },
+      { property: "og:url", content: "/geometria" },
+      { property: "og:type", content: "article" },
+    ],
+    links: [{ rel: "canonical", href: "/geometria" }],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "LearningResource",
+          name: "Fractais Geométricos (Cantor, Koch, Sierpinski)",
+          inLanguage: "pt-BR",
+          learningResourceType: "Interactive simulation",
+          educationalUse: "instruction",
+        }),
+      },
     ],
   }),
   component: Geometria,
