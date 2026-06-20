@@ -25,6 +25,9 @@ export const Route = createFileRoute("/construcao")({
 const TOTAL_POINTS = 25000;
 const MAX_ITER = 120;
 
+/** Cor de fundo dos canvases — espelha --canvas-bg em src/styles.css. */
+const CANVAS_BG_CSS = "oklch(0.08 0.02 240)";
+
 // Domínio visualizado
 const X_MIN = -2.1;
 const X_MAX = 0.7;
