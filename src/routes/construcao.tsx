@@ -86,6 +86,7 @@ function computeOrbit(cRe: number, cIm: number): OrbitResult {
 }
 
 function ConstrucaoPage() {
+  const navigate = useNavigate();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const [points, setPoints] = useState<Float32Array | null>(null);
@@ -416,8 +417,8 @@ function ConstrucaoPage() {
             <p className="mt-1 max-w-2xl text-xs text-muted-foreground">
               Digite as partes real e imaginária de <em>c</em>. Calculamos
               iteração por iteração até {MAX_ITER} passos, com{" "}
-              <code className="rounded bg-secondary px-1">z₀ = 0</code> e{" "}
-              <code className="rounded bg-secondary px-1">z_(n+1) = z_n² + c</code>.
+              <TeX tex="z_0 = 0" /> e{" "}
+              <TeX tex="z_{n+1} = z_n^{2} + c" />.
             </p>
 
             <div className="mt-4 grid gap-3 md:grid-cols-[1fr_1fr_auto]">
@@ -462,6 +463,12 @@ function ConstrucaoPage() {
                   setAnimatingOrbit(false);
                   setOrbitVisible(orbit.points.length);
                 }}
+                onOpenInMandelbrot={() => {
+                  navigate({
+                    to: "/",
+                    search: { cRe: orbit.cRe, cIm: orbit.cIm, julia: 1 },
+                  });
+                }}
               />
             )}
           </section>
@@ -473,8 +480,8 @@ function ConstrucaoPage() {
               body={
                 <>
                   Para cada candidato <em>c</em>, iteramos{" "}
-                  <code className="rounded bg-secondary px-1">z_(n+1) = z_n² + c</code>{" "}
-                  com <em>z₀ = 0</em>. Se após {MAX_ITER} iterações o módulo
+                  <TeX tex="z_{n+1} = z_n^{2} + c" />{" "}
+                  com <TeX tex="z_0 = 0" />. Se após {MAX_ITER} iterações o módulo
                   permanece ≤ 2, consideramos que <em>c</em> pertence ao
                   conjunto e o desenhamos.
                 </>
