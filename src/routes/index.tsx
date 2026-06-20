@@ -603,7 +603,7 @@ function PlanoComplexo() {
 
               {/* How it works */}
               <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-                <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Como Funciona?</h3>
+                <h2 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Como Funciona?</h2>
                 <div className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-4">
                   <Step n={1} icon={<Target className="h-7 w-7" />} text={<>Escolha um ponto <em>c</em> no plano complexo.</>} />
                   <Step n={2} icon={<Loader2 className="h-7 w-7" />} text={<>Começamos em z₀ = 0 e aplicamos a fórmula.</>} />
@@ -614,7 +614,7 @@ function PlanoComplexo() {
 
               {/* Math concepts */}
               <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-                <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Conceitos Matemáticos</h3>
+                <h2 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Conceitos Matemáticos</h2>
                 <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <ConceptCard
                     title="Auto-similaridade"
@@ -638,7 +638,7 @@ function PlanoComplexo() {
             {/* Right column */}
             <aside className="space-y-5">
               <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-                <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Exemplos Rápidos</h3>
+                <h2 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Exemplos Rápidos</h2>
                 <p className="mt-1 text-xs text-muted-foreground">Carregue configurações prontas:</p>
                 <div className="mt-4 space-y-2">
                   {PRESETS.map((pr) => {
@@ -659,7 +659,7 @@ function PlanoComplexo() {
               </div>
 
               <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-                <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Sobre os Parâmetros</h3>
+                <h2 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Sobre os Parâmetros</h2>
                 <ul className="mt-3 space-y-3 text-xs leading-relaxed text-muted-foreground">
                   <li><span className="font-semibold text-[oklch(0.5_0.16_150)]">A real:</span> escala as órbitas no eixo real.</li>
                   <li><span className="font-semibold text-[oklch(0.5_0.18_255)]">A imag:</span> rotaciona as órbitas no plano complexo.</li>

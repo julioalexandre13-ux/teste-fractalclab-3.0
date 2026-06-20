@@ -391,7 +391,7 @@ function Geometria() {
             {/* Sidebar */}
             <aside className="space-y-5">
               <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-                <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Como Funciona?</h3>
+                <h2 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Como Funciona?</h2>
                 <p className="mt-1 text-xs text-muted-foreground">Todos estes fractais são gerados por um processo iterativo simples:</p>
                 <ul className="mt-4 space-y-3 text-xs text-foreground">
                   <li className="flex items-center gap-2"><CircleIcon className="h-3 w-3 fill-[oklch(0.55_0.16_150)] text-[oklch(0.55_0.16_150)]" /> 1. Comece com uma figura inicial.</li>
@@ -406,7 +406,7 @@ function Geometria() {
 
               {/* Dimension comparison */}
               <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-                <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Dimensão Fractal</h3>
+                <h2 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Dimensão Fractal</h2>
                 <p className="mt-1 text-xs text-muted-foreground">Comparação das dimensões de Hausdorff:</p>
                 <div className="mt-3 space-y-3">
                   {[
@@ -444,7 +444,7 @@ function Geometria() {
 
               {/* Presets */}
               <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-                <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Presets Rápidos</h3>
+                <h2 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Presets Rápidos</h2>
                 <p className="mt-1 text-xs text-muted-foreground">Escolha quantas iterações usar:</p>
                 <div className="mt-3 grid grid-cols-5 gap-2">
                   {[1, 2, 3, 4, 5].map((n) => {
