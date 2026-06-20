@@ -198,14 +198,14 @@ function ConstrucaoPage() {
 
     // Se diminuiu, redesenha do zero.
     if (count < lastDrawnRef.current) {
-      ctx.fillStyle = "oklch(0.08 0.02 240)";
+      ctx.fillStyle = CANVAS_BG_CSS;
       ctx.fillRect(0, 0, W, H);
       drawAxes(ctx, W, H);
       lastDrawnRef.current = 0;
     }
 
     if (lastDrawnRef.current === 0) {
-      ctx.fillStyle = "oklch(0.08 0.02 240)";
+      ctx.fillStyle = CANVAS_BG_CSS;
       ctx.fillRect(0, 0, W, H);
       drawAxes(ctx, W, H);
     }
@@ -319,9 +319,9 @@ function ConstrucaoPage() {
                     aria-hidden
                   >
                     <div className="relative">
-                      <div className="absolute left-1/2 top-1/2 h-4 w-px -translate-x-1/2 -translate-y-1/2 bg-[#ff5577]" />
-                      <div className="absolute left-1/2 top-1/2 h-px w-4 -translate-x-1/2 -translate-y-1/2 bg-[#ff5577]" />
-                      <div className="h-3 w-3 rounded-full border-2 border-[#ff5577] bg-[#ff557733]" />
+                      <div className="absolute left-1/2 top-1/2 h-4 w-px -translate-x-1/2 -translate-y-1/2 bg-marker" />
+                      <div className="absolute left-1/2 top-1/2 h-px w-4 -translate-x-1/2 -translate-y-1/2 bg-marker" />
+                      <div className="h-3 w-3 rounded-full border-2 border-marker bg-marker/20" />
                     </div>
                   </div>
                 )}
