@@ -542,8 +542,10 @@ function Geometria() {
           </div>
         </div>
       </main>
+      <GuidedTour open={tourOpen} onClose={() => setTourOpen(false)} steps={GEOMETRIA_TOUR} label="Tour da Geometria" />
     </div>
   );
+
 }
 
 // ---------------------------------------------------------------------------
