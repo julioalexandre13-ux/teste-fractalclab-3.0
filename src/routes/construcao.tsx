@@ -304,6 +304,28 @@ function ConstrucaoPage() {
               <div className="pointer-events-none absolute left-2 top-2 rounded-md bg-black/60 px-2 py-1 font-mono text-[10px] text-white/80 backdrop-blur-sm">
                 {count.toLocaleString("pt-BR")} / {total.toLocaleString("pt-BR")} pontos · {pct}%
               </div>
+              {orbit &&
+                orbit.cRe >= X_MIN &&
+                orbit.cRe <= X_MAX &&
+                orbit.cIm >= Y_MIN &&
+                orbit.cIm <= Y_MAX && (
+                  <div
+                    className="pointer-events-none absolute"
+                    style={{
+                      left: `${((orbit.cRe - X_MIN) / (X_MAX - X_MIN)) * 100}%`,
+                      top: `${(1 - (orbit.cIm - Y_MIN) / (Y_MAX - Y_MIN)) * 100}%`,
+                      transform: "translate(-50%, -50%)",
+                    }}
+                    aria-hidden
+                  >
+                    <div className="relative">
+                      <div className="absolute left-1/2 top-1/2 h-4 w-px -translate-x-1/2 -translate-y-1/2 bg-[#ff5577]" />
+                      <div className="absolute left-1/2 top-1/2 h-px w-4 -translate-x-1/2 -translate-y-1/2 bg-[#ff5577]" />
+                      <div className="h-3 w-3 rounded-full border-2 border-[#ff5577] bg-[#ff557733]" />
+                    </div>
+                  </div>
+                )}
+
             </div>
 
             {/* Controles */}
