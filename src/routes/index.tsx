@@ -344,16 +344,16 @@ function PlanoComplexo() {
             </div>
           </header>
 
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_300px]">
             {/* Center column */}
             <div className="space-y-6">
               {/* Formula panel */}
               <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
                 <div className="flex flex-wrap items-center gap-6">
                   <div className="min-w-[200px]">
-                    <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Fórmula Atual</div>
-                    <div className="mt-2 font-serif text-2xl italic text-foreground">
-                      z<sub>n+1</sub> = A · z<sub>n</sub><sup>P</sup> + c
+                    <h2 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Fórmula Atual</h2>
+                    <div className="mt-2 text-2xl text-foreground">
+                      <TeX tex="z_{n+1} = A \cdot z_n^{P} + c" />
                     </div>
                     <div className="mt-1 text-[11px] text-muted-foreground">
                       Dim. Hausdorff ≈ <span className="font-semibold text-primary">{hausdorffDim}</span>
