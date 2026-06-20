@@ -78,9 +78,12 @@ const TOUR_STEPS: TourStep[] = [
 interface GuidedTourProps {
   open: boolean;
   onClose: () => void;
+  steps?: TourStep[];
+  label?: string;
 }
 
-export function GuidedTour({ open, onClose }: GuidedTourProps) {
+export function GuidedTour({ open, onClose, steps, label = "Tour Guiado" }: GuidedTourProps) {
+  const tourSteps = steps && steps.length > 0 ? steps : TOUR_STEPS;
   const [step, setStep] = useState(0);
 
   useEffect(() => {
@@ -91,18 +94,19 @@ export function GuidedTour({ open, onClose }: GuidedTourProps) {
     const handler = (e: KeyboardEvent) => {
       if (!open) return;
       if (e.key === "Escape") onClose();
-      if (e.key === "ArrowRight" && step < TOUR_STEPS.length - 1) setStep((s) => s + 1);
+      if (e.key === "ArrowRight" && step < tourSteps.length - 1) setStep((s) => s + 1);
       if (e.key === "ArrowLeft" && step > 0) setStep((s) => s - 1);
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [open, step, onClose]);
+  }, [open, step, onClose, tourSteps.length]);
 
   if (!open) return null;
 
-  const current = TOUR_STEPS[step];
-  const isLast = step === TOUR_STEPS.length - 1;
-  const progress = ((step + 1) / TOUR_STEPS.length) * 100;
+  const current = tourSteps[step];
+  const isLast = step === tourSteps.length - 1;
+  const progress = ((step + 1) / tourSteps.length) * 100;
+
 
   return (
     <div
