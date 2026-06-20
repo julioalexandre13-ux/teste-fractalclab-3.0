@@ -1,19 +1,40 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Play, Pause, RotateCcw, Sparkles, Target } from "lucide-react";
+import { Play, Pause, RotateCcw, Sparkles, Target, ExternalLink } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Math as TeX } from "@/components/Math";
+import type { PointsRequest, PointsResponse } from "../workers/mandelbrot-points.worker";
 
 
 export const Route = createFileRoute("/construcao")({
   head: () => ({
     meta: [
-      { title: "FractalCLab — Construção do Mandelbrot" },
+      { title: "Construção do Mandelbrot — FractalCLab" },
       {
         name: "description",
         content:
           "Veja o conjunto de Mandelbrot se formar ponto a ponto a partir da recorrência z_{n+1} = z_n² + c.",
+      },
+      { property: "og:title", content: "Construção do Mandelbrot — FractalCLab" },
+      { property: "og:description", content: "Animação do conjunto de Mandelbrot se formando ponto a ponto." },
+      { property: "og:url", content: "/construcao" },
+      { property: "og:type", content: "article" },
+    ],
+    links: [{ rel: "canonical", href: "/construcao" }],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "LearningResource",
+          name: "Construção do Conjunto de Mandelbrot",
+          inLanguage: "pt-BR",
+          learningResourceType: "Interactive simulation",
+          educationalUse: "instruction",
+          about: "Conjunto de Mandelbrot, recorrência z_{n+1} = z_n^2 + c",
+        }),
       },
     ],
   }),
@@ -34,51 +55,6 @@ const X_MAX = 0.7;
 const Y_MIN = -1.25;
 const Y_MAX = 1.25;
 
-/** Gera, por amostragem aleatória, pontos c que NÃO escapam (∈ Mandelbrot). */
-function generateMandelbrotPoints(target: number): Float32Array {
-  const out = new Float32Array(target * 2);
-  let found = 0;
-  // Limite de segurança para não travar caso target seja muito alto.
-  let attempts = 0;
-  const maxAttempts = target * 60;
-
-  while (found < target && attempts < maxAttempts) {
-    attempts++;
-    const cx = X_MIN + Math.random() * (X_MAX - X_MIN);
-    const cy = Y_MIN + Math.random() * (Y_MAX - Y_MIN);
-
-    // Cardioid + period-2 bulb early-accept (evita iterar pontos certamente dentro)
-    const q = (cx - 0.25) * (cx - 0.25) + cy * cy;
-    const inCardioid = q * (q + (cx - 0.25)) <= 0.25 * cy * cy;
-    const inBulb = (cx + 1) * (cx + 1) + cy * cy <= 0.0625;
-
-    let inside = inCardioid || inBulb;
-    if (!inside) {
-      let zx = 0,
-        zy = 0;
-      let escaped = false;
-      for (let i = 0; i < MAX_ITER; i++) {
-        const nx = zx * zx - zy * zy + cx;
-        const ny = 2 * zx * zy + cy;
-        zx = nx;
-        zy = ny;
-        if (zx * zx + zy * zy > 4) {
-          escaped = true;
-          break;
-        }
-      }
-      inside = !escaped;
-    }
-
-    if (inside) {
-      out[found * 2] = cx;
-      out[found * 2 + 1] = cy;
-      found++;
-    }
-  }
-
-  return out.subarray(0, found * 2) as Float32Array;
-}
 
 type OrbitResult = {
   cRe: number;
