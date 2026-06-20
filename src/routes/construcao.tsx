@@ -549,9 +549,11 @@ function ConstrucaoPage() {
           </section>
         </div>
       </main>
+      <GuidedTour open={tourOpen} onClose={() => setTourOpen(false)} steps={CONSTRUCAO_TOUR} label="Tour da Construção" />
     </div>
   );
 }
+
 
 function drawAxes(ctx: CanvasRenderingContext2D, W: number, H: number) {
   const sx = W / (X_MAX - X_MIN);
